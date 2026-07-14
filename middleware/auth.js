@@ -2,79 +2,109 @@
  * Authentication Middleware
  * Verifies JWT tokens and protects routes
  */
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+
+const User = require("../models/User");
+const { verifyToken } = require("../config/jwt");
 
 const auth = async (req, res, next) => {
-  try {
-    // Get token from header
-    const authHeader = req.headers.authorization;
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({
-        success: false,
-        message: 'Access denied. No token provided.',
-      });
-    }
+    try {
 
-    const token = authHeader.split(' ')[1];
+        const authHeader = req.headers.authorization;
 
-    // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
-    // Find user
-    const user = await User.findById(decoded.id).select('-password');
-    
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Token is valid but user not found.',
-      });
-    }
+        if (!authHeader || !authHeader.startsWith("Bearer ")) {
+            return res.status(401).json({
+                success: false,
+                message: "Access denied. Please login."
+            });
+        }
 
-    if (!user.isActive) {
-      return res.status(401).json({
-        success: false,
-        message: 'Account is deactivated.',
-      });
-    }
+        const token = authHeader.split(" ")[1];
 
-    // Attach user to request
-    req.user = user;
-    next();
-  } catch (error) {
-    if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid token.',
-      });
+        const decoded = verifyToken(token);
+
+        const user = await User.findById(decoded.id).select("-password");
+
+        if (!user) {
+            return res.status(401).json({
+                success: false,
+                message: "User not found."
+            });
+        }
+
+        // Check account status
+        if (user.status === "blocked") {
+            return res.status(403).json({
+                success: false,
+                message: "Your account has been blocked. Please contact support."
+            });
+        }
+
+        // Enable after Email OTP is implemented
+        /*
+        if (!user.isVerified) {
+            return res.status(403).json({
+                success: false,
+                message: "Please verify your email first."
+            });
+        }
+        */
+
+        req.user = user;
+
+        next();
+
+    } catch (error) {
+
+        if (error.name === "TokenExpiredError") {
+            return res.status(401).json({
+                success: false,
+                message: "Session expired. Please login again."
+            });
+        }
+
+        if (error.name === "JsonWebTokenError") {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid token."
+            });
+        }
+
+        return res.status(500).json({
+            success: false,
+            message: "Authentication failed."
+        });
+
     }
-    if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({
-        success: false,
-        message: 'Token expired. Please login again.',
-      });
-    }
-    return res.status(500).json({
-      success: false,
-      message: 'Authentication error.',
-    });
-  }
 };
 
-// Optional auth - doesn't fail if no token
 const optionalAuth = async (req, res, next) => {
-  try {
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.split(' ')[1];
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      req.user = await User.findById(decoded.id).select('-password');
+
+    try {
+
+        const authHeader = req.headers.authorization;
+
+        if (authHeader && authHeader.startsWith("Bearer ")) {
+
+            const token = authHeader.split(" ")[1];
+
+            const decoded = verifyToken(token);
+
+            const user = await User.findById(decoded.id).select("-password");
+
+            if (user && user.status === "active") {
+                req.user = user;
+            }
+
+        }
+
+    } catch (error) {
+        // Continue without authentication
     }
-  } catch (error) {
-    // Silently continue without auth
-  }
-  next();
+
+    next();
 };
 
-module.exports = { auth, optionalAuth };
+module.exports = {
+    auth,
+    optionalAuth
+};

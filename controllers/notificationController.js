@@ -29,3 +29,53 @@ exports.deleteNotification = async (req, res, next) => {
     res.json({ success: true, message: 'Notification deleted' });
   } catch (error) { next(error); }
 };
+
+/*
+==========================================
+Mark All Notifications Read
+==========================================
+*/
+
+exports.markAllRead = async (req, res, next) => {
+
+    try {
+
+        await Notification.updateMany(
+
+            {
+
+                user: req.user._id,
+
+                read: false
+
+            },
+
+            {
+
+                $set: {
+
+                    read: true
+
+                }
+
+            }
+
+        );
+
+        res.json({
+
+            success: true,
+
+            message: "All notifications marked as read"
+
+        });
+
+    }
+
+    catch (error) {
+
+        next(error);
+
+    }
+
+};

@@ -1,51 +1,81 @@
 /**
  * Multer Configuration
- * Handles file upload storage, filtering, and size limits
+ * Handles file uploads for audio and video meetings
  */
-const multer = require('multer');
-const path = require('path');
-const { v4: uuidv4 } = require('uuid');
 
-// Allowed file types for meeting recordings
-const ALLOWED_TYPES = {
-  'video/mp4': '.mp4',
-  'video/quicktime': '.mov',
-  'video/x-msvideo': '.avi',
-  'audio/wav': '.wav',
-  'audio/mpeg': '.mp3',
-  'audio/mp4': '.m4a',
-  'audio/x-m4a': '.m4a',
-  'video/webm': '.webm',
-  'audio/webm': '.webm',
-};
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
+
+// Upload folder
+const uploadPath = path.join(__dirname, "..", "uploads");
+
+if (!fs.existsSync(uploadPath)) {
+    fs.mkdirSync(uploadPath, { recursive: true });
+}
 
 // Storage configuration
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '..', 'uploads'));
-  },
-  filename: (req, file, cb) => {
-    const uniqueName = `${uuidv4()}${path.extname(file.originalname)}`;
-    cb(null, uniqueName);
-  },
+
+    destination: (req, file, cb) => {
+        cb(null, uploadPath);
+    },
+
+    filename: (req, file, cb) => {
+
+        const uniqueName =
+            Date.now() +
+            "-" +
+            Math.round(Math.random() * 1E9) +
+            path.extname(file.originalname);
+
+        cb(null, uniqueName);
+    }
+
 });
 
-// File filter
+// Allowed file types
 const fileFilter = (req, file, cb) => {
-  if (ALLOWED_TYPES[file.mimetype]) {
-    cb(null, true);
-  } else {
-    cb(new Error(`File type ${file.mimetype} is not supported. Supported types: mp4, mov, avi, wav, mp3, m4a`), false);
-  }
+
+    const allowedTypes = [
+
+        "audio/mpeg",
+        "audio/mp3",
+        "audio/wav",
+        "audio/x-wav",
+        "audio/mp4",
+        "audio/x-m4a",
+        "video/mp4",
+        "video/x-msvideo",
+        "video/quicktime",
+        "video/x-matroska"
+
+    ];
+
+    if (allowedTypes.includes(file.mimetype)) {
+
+        cb(null, true);
+
+    } else {
+
+        cb(new Error("Only Audio and Video files are allowed"), false);
+
+    }
+
 };
 
-// Create multer instance
 const upload = multer({
-  storage,
-  fileFilter,
-  limits: {
-    fileSize: 500 * 1024 * 1024, // 500MB max
-  },
+
+    storage,
+
+    fileFilter,
+
+    limits: {
+
+        fileSize: 500 * 1024 * 1024 // 500MB
+
+    }
+
 });
 
 module.exports = upload;

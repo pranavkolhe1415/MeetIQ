@@ -87,8 +87,8 @@ async function handleVerifyOTP(e) {
   const btn = document.getElementById('otp-btn');
   const code = document.getElementById('otp-code').value.trim();
 
-  if (code.length !== 6 || isNaN(code)) {
-    return showToast('Please enter a valid 6-digit verification code', 'error');
+  if (code.length !== 8 || isNaN(code)) {
+    return showToast('Please enter a valid 8-digit verification code', 'error');
   }
 
   btn.disabled = true;
@@ -162,7 +162,7 @@ async function handleSignup(e) {
   const password = document.getElementById('signup-password').value;
 
   if (!name || !email || !password) return showToast('Please fill all fields', 'error');
-  if (password.length < 6) return showToast('Password must be at least 6 characters', 'error');
+  if (password.length < 8) return showToast('Password must be at least 6 characters', 'error');
 
   btn.disabled = true;
   btn.innerHTML = '<span>Creating account...</span>';

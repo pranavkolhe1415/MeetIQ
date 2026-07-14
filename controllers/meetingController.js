@@ -202,3 +202,142 @@ exports.getDashboardStats = async (req, res, next) => {
     });
   } catch (error) { next(error); }
 };
+/*
+==========================================
+Toggle Favorite
+==========================================
+*/
+
+exports.toggleFavorite = async (req, res, next) => {
+
+    try {
+
+        const meeting = await Meeting.findOne({
+
+            _id: req.params.id,
+
+            user: req.user._id
+
+        });
+
+        if (!meeting) {
+
+            return res.status(404).json({
+
+                success: false,
+
+                message: "Meeting not found"
+
+            });
+
+        }
+
+        meeting.isFavorite = !meeting.isFavorite;
+
+        await meeting.save();
+
+        res.json({
+
+            success: true,
+
+            message: meeting.isFavorite
+                ? "Meeting added to favorites"
+                : "Meeting removed from favorites",
+
+            data: {
+
+                meeting
+
+            }
+
+        });
+
+    } catch (error) {
+
+        next(error);
+
+    }
+
+};
+
+/*
+==========================================
+Rename Meeting
+==========================================
+*/
+
+exports.renameMeeting = async (req, res, next) => {
+
+    try {
+
+        const { title } = req.body;
+
+        if (!title) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message: "Meeting title required"
+
+            });
+
+        }
+
+        const meeting = await Meeting.findOneAndUpdate(
+
+            {
+
+                _id: req.params.id,
+
+                user: req.user._id
+
+            },
+
+            {
+
+                title
+
+            },
+
+            {
+
+                new: true
+
+            }
+
+        );
+
+        if (!meeting) {
+
+            return res.status(404).json({
+
+                success: false,
+
+                message: "Meeting not found"
+
+            });
+
+        }
+
+        res.json({
+
+            success: true,
+
+            message: "Meeting renamed",
+
+            data: {
+
+                meeting
+
+            }
+
+        });
+
+    } catch (error) {
+
+        next(error);
+
+    }
+
+};
