@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="MeetIQ - AI-powered meeting intelligence platform. Upload recordings, get AI transcripts, summaries, and professional reports.">
+  <title>MeetIQ — AI Meeting Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+</head>
+<body>
+  <div id="app">
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+      <div class="loader-content">
+        <div class="loader-logo">
+          <div class="loader-brain">🧠</div>
+          <span>MeetIQ</span>
+        </div>
+        <div class="loader-bar"><div class="loader-bar-fill"></div></div>
+        <p class="loader-text">Initializing AI Engine...</p>
+      </div>
+    </div>
+
+    <!-- App Shell - shown after auth -->
+    <div id="app-shell" class="app-shell hidden">
+      <!-- Sidebar -->
+      <aside id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+          <div class="sidebar-logo" onclick="navigateTo('dashboard')">
+            <span class="logo-icon">🧠</span>
+            <span class="logo-text">MeetIQ</span>
+          </div>
+          <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle sidebar">
+            <i data-lucide="panel-left-close" class="icon-sm"></i>
+          </button>
+        </div>
+        <nav class="sidebar-nav">
+          <a href="#" class="nav-item active" data-page="dashboard" data-tooltip="Dashboard" onclick="navigateTo('dashboard')">
+            <i data-lucide="layout-dashboard"></i><span>Dashboard</span>
+          </a>
+          <a href="#" class="nav-item" data-page="upload" data-tooltip="Upload Meeting" onclick="navigateTo('upload')">
+            <i data-lucide="upload-cloud"></i><span>Upload Meeting</span>
+          </a>
+          <a href="#" class="nav-item" data-page="history" data-tooltip="Meeting History" onclick="navigateTo('history')">
+            <i data-lucide="history"></i><span>Meeting History</span>
+          </a>
+          <a href="#" class="nav-item" data-page="about" data-tooltip="About" onclick="navigateTo('about')">
+            <i data-lucide="info"></i><span>About</span>
+          </a>
+        </nav>
+        <div class="sidebar-footer">
+          <a href="#" class="nav-item" data-page="profile" data-tooltip="Profile" onclick="navigateTo('profile')">
+            <i data-lucide="user"></i><span>Profile</span>
+          </a>
+          <a href="#" class="nav-item" data-page="settings" data-tooltip="Settings" onclick="navigateTo('settings')">
+            <i data-lucide="settings"></i><span>Settings</span>
+          </a>
+          <a href="#" class="nav-item logout-item" data-tooltip="Logout" onclick="logout()">
+            <i data-lucide="log-out"></i><span>Logout</span>
+          </a>
+        </div>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="main-content">
+        <!-- Top Bar -->
+        <header class="topbar">
+          <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Menu">
+            <i data-lucide="menu"></i>
+          </button>
+          <div class="topbar-search">
+            <i data-lucide="search" class="search-icon"></i>
+            <input type="text" id="global-search" placeholder="🔍 Search meetings..." autocomplete="off">
+            <button type="button" class="search-clear-btn hidden" id="search-clear-btn" aria-label="Clear search">
+              <i data-lucide="x"></i>
+            </button>
+          </div>
+          <div class="topbar-actions">
+            <button class="topbar-btn theme-toggle" id="theme-toggle" aria-label="Toggle theme">
+              <i data-lucide="moon" id="theme-icon"></i>
+            </button>
+            <button class="topbar-btn notification-btn" id="notification-btn" aria-label="Notifications">
+              <i data-lucide="bell"></i>
+              <span class="notification-badge hidden" id="notification-badge">0</span>
+            </button>
+            <div class="topbar-user" id="topbar-user" onclick="navigateTo('profile')">
+              <div class="user-avatar" id="user-avatar">U</div>
+              <span class="user-name" id="user-name">User</span>
+            </div>
+          </div>
+        </header>
+
+        <!-- Page Content Container -->
+        <div class="page-content" id="page-content">
+          <!-- Pages injected dynamically by JS -->
+        </div>
+      </main>
+    </div>
+
+    <!-- Notification Panel -->
+    <div id="notification-panel" class="notification-panel hidden">
+      <div class="notif-header">
+        <h3>Notifications</h3>
+        <button onclick="markAllNotificationsRead()" class="notif-mark-all">Mark all read</button>
+      </div>
+      <div id="notification-list" class="notification-list">
+        <div class="notif-empty">No notifications</div>
+      </div>
+    </div>
+
+    <!-- Auth Pages -->
+    <div id="auth-container" class="auth-container hidden">
+      <!-- Login Page -->
+      <div id="login-page" class="auth-page">
+        <div class="auth-card glass-card">
+          <button type="button" class="auth-back-btn" onclick="handleAuthBack()" aria-label="Go back">
+            <i data-lucide="arrow-left"></i>
+          </button>
+          <div class="auth-logo"><span class="logo-icon">🧠</span><span>MeetIQ</span></div>
+          <h2>Welcome Back</h2>
+          <p class="auth-subtitle">Sign in to your AI meeting workspace</p>
+          <form id="login-form" onsubmit="handleLogin(event)">
+            <div class="form-group">
+              <label for="login-email">Email</label>
+              <div class="input-wrapper">
+                <i data-lucide="mail" class="input-icon"></i>
+                <input type="email" id="login-email" placeholder="you@example.com" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="login-password">Password</label>
+              <div class="input-wrapper">
+                <i data-lucide="lock" class="input-icon"></i>
+                <input type="password" id="login-password" placeholder="••••••••" required>
+                <button type="button" class="password-toggle" onclick="togglePassword('login-password')">
+                  <i data-lucide="eye"></i>
+                </button>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-full" id="login-btn">
+              <span>Sign In</span>
+              <i data-lucide="arrow-right"></i>
+            </button>
+          </form>
+          <p class="auth-switch">Don't have an account? <a href="#" onclick="showAuth('signup')">Sign Up</a></p>
+          <p class="auth-switch" style="margin-top: 10px; font-size: 13px;"><a href="#" onclick="showAuth('forgot')">Forgot Password?</a></p>
+        </div>
+        <div class="auth-bg-shapes">
+          <div class="shape shape-1"></div>
+          <div class="shape shape-2"></div>
+          <div class="shape shape-3"></div>
+        </div>
+      </div>
+
+      <!-- Signup Page -->
+      <div id="signup-page" class="auth-page hidden">
+        <div class="auth-card glass-card">
+          <button type="button" class="auth-back-btn" onclick="handleAuthBack()" aria-label="Go back">
+            <i data-lucide="arrow-left"></i>
+          </button>
+          <div class="auth-logo"><span class="logo-icon">🧠</span><span>MeetIQ</span></div>
+          <h2>Create Account</h2>
+          <p class="auth-subtitle">Start analyzing meetings with AI</p>
+          <form id="signup-form" onsubmit="handleSignup(event)">
+            <div class="form-group">
+              <label for="signup-name">Full Name</label>
+              <div class="input-wrapper">
+                <i data-lucide="user" class="input-icon"></i>
+                <input type="text" id="signup-name" placeholder="John Doe" required minlength="2">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="signup-email">Email</label>
+              <div class="input-wrapper">
+                <i data-lucide="mail" class="input-icon"></i>
+                <input type="email" id="signup-email" placeholder="you@example.com" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="signup-password">Password</label>
+              <div class="input-wrapper">
+                <i data-lucide="lock" class="input-icon"></i>
+                <input type="password" id="signup-password" placeholder="Min. 6 characters" required minlength="6">
+                <button type="button" class="password-toggle" onclick="togglePassword('signup-password')">
+                  <i data-lucide="eye"></i>
+                </button>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-full" id="signup-btn">
+              <span>Create Account</span>
+              <i data-lucide="arrow-right"></i>
+            </button>
+          </form>
+          <p class="auth-switch">Already have an account? <a href="#" onclick="showAuth('login')">Sign In</a></p>
+        </div>
+        <div class="auth-bg-shapes">
+          <div class="shape shape-1"></div>
+          <div class="shape shape-2"></div>
+          <div class="shape shape-3"></div>
+        </div>
+      </div>
+
+      <!-- Forgot Password Page -->
+      <div id="forgot-page" class="auth-page hidden">
+        <div class="auth-card glass-card">
+          <button type="button" class="auth-back-btn" onclick="handleAuthBack()" aria-label="Go back">
+            <i data-lucide="arrow-left"></i>
+          </button>
+          <div class="auth-logo"><span class="logo-icon">🧠</span><span>MeetIQ</span></div>
+          <h2>Forgot Password</h2>
+          <p class="auth-subtitle">Enter your email to receive a verification code</p>
+          <form id="forgot-form" onsubmit="handleForgotPassword(event)">
+            <div class="form-group">
+              <label for="forgot-email">Email Address</label>
+              <div class="input-wrapper">
+                <i data-lucide="mail" class="input-icon"></i>
+                <input type="email" id="forgot-email" placeholder="you@example.com" required>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-full" id="forgot-btn">
+              <span>Send OTP</span>
+              <i data-lucide="arrow-right"></i>
+            </button>
+          </form>
+          <p class="auth-switch">Remembered password? <a href="#" onclick="showAuth('login')">Sign In</a></p>
+        </div>
+        <div class="auth-bg-shapes">
+          <div class="shape shape-1"></div>
+          <div class="shape shape-2"></div>
+          <div class="shape shape-3"></div>
+        </div>
+      </div>
+
+      <!-- OTP Page -->
+      <div id="otp-page" class="auth-page hidden">
+        <div class="auth-card glass-card">
+          <button type="button" class="auth-back-btn" onclick="handleCancelOTP()" aria-label="Cancel verification">
+            <i data-lucide="arrow-left"></i>
+          </button>
+          <div class="auth-logo"><span class="logo-icon">🧠</span><span>MeetIQ</span></div>
+          <h2>Verify OTP</h2>
+          <p class="auth-subtitle">Enter the 6-digit verification code sent to your email</p>
+          <form id="otp-form" onsubmit="handleVerifyOTP(event)">
+            <div class="form-group">
+              <label for="otp-code">Verification Code</label>
+              <div class="input-wrapper">
+                <i data-lucide="shield-check" class="input-icon"></i>
+                <input type="text" id="otp-code" placeholder="123456" required pattern="[0-9]{6}" maxlength="6" autocomplete="off">
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-full" id="otp-btn">
+              <span>Verify & Reset</span>
+              <i data-lucide="arrow-right"></i>
+            </button>
+          </form>
+          <p class="auth-switch">Didn't receive code? <a href="#" onclick="showAuth('forgot')">Resend OTP</a></p>
+        </div>
+        <div class="auth-bg-shapes">
+          <div class="shape shape-1"></div>
+          <div class="shape shape-2"></div>
+          <div class="shape shape-3"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Landing Page -->
+    <div id="landing-page" class="landing-page hidden">
+      <!-- Landing Navbar -->
+      <nav class="landing-nav">
+        <div class="landing-nav-inner">
+          <div class="landing-logo"><span class="logo-icon">🧠</span><span>MeetIQ</span></div>
+          <div class="landing-nav-links">
+            <a href="#features">Features</a>
+            <a href="#pricing">Pricing</a>
+            <a href="#faq">FAQ</a>
+          </div>
+          <div class="landing-nav-actions">
+            <button class="btn btn-ghost" onclick="showAuth('login')">Sign In</button>
+            <button class="btn btn-primary" onclick="showAuth('signup')">Get Started</button>
+          </div>
+          <button class="landing-hamburger" id="landing-hamburger" aria-label="Menu">
+            <i data-lucide="menu"></i>
+          </button>
+        </div>
+      </nav>
+
+      <!-- Hero Section -->
+      <section class="hero-section">
+        <div class="hero-gradient-bg"></div>
+        <div class="hero-content">
+          <div class="hero-badge">🚀 AI-Powered Meeting Intelligence</div>
+          <h1 class="hero-title">Transform Your <span class="gradient-text">Meetings</span> Into Actionable Intelligence</h1>
+          <p class="hero-subtitle">Upload any meeting recording and let AI generate transcripts, summaries, action items, and professional reports in minutes.</p>
+          <div class="hero-cta">
+            <button class="btn btn-primary btn-lg" onclick="showAuth('signup')">
+              <i data-lucide="zap"></i> Start Free
+            </button>
+            <button class="btn btn-outline btn-lg" onclick="document.getElementById('features').scrollIntoView({behavior:'smooth'})">
+              <i data-lucide="play-circle"></i> See How It Works
+            </button>
+          </div>
+          <div class="hero-stats">
+            <div class="hero-stat"><span class="stat-value">10K+</span><span class="stat-label">Meetings Analyzed</span></div>
+            <div class="hero-stat"><span class="stat-value">98%</span><span class="stat-label">Accuracy Rate</span></div>
+            <div class="hero-stat"><span class="stat-value">5min</span><span class="stat-label">Avg. Processing</span></div>
+            <div class="hero-stat"><span class="stat-value">4.9★</span><span class="stat-label">User Rating</span></div>
+          </div>
+        </div>
+        <div class="hero-visual">
+          <div class="hero-mockup glass-card">
+            <div class="mockup-header">
+              <div class="mockup-dots"><span></span><span></span><span></span></div>
+              <span class="mockup-title">AI Meeting Report</span>
+            </div>
+            <div class="mockup-body">
+              <div class="mockup-line w80"></div>
+              <div class="mockup-line w60"></div>
+              <div class="mockup-line w90"></div>
+              <div class="mockup-metrics">
+                <div class="mockup-metric"><div class="metric-circle"></div><span>Speakers: 4</span></div>
+                <div class="mockup-metric"><div class="metric-circle green"></div><span>Sentiment: Positive</span></div>
+                <div class="mockup-metric"><div class="metric-circle blue"></div><span>Actions: 5</span></div>
+              </div>
+              <div class="mockup-line w70"></div>
+              <div class="mockup-line w85"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Features Section -->
+      <section class="features-section" id="features">
+        <div class="section-container">
+          <div class="section-header">
+            <span class="section-badge">Features</span>
+            <h2>Everything You Need to <span class="gradient-text">Master Meetings</span></h2>
+            <p>Powerful AI tools to transform how you handle meetings</p>
+          </div>
+          <div class="features-grid">
+            <div class="feature-card glass-card">
+              <div class="feature-icon gradient-bg"><i data-lucide="mic"></i></div>
+              <h3>AI Transcription</h3>
+              <p>Automatic speech-to-text powered by OpenAI Whisper with speaker identification.</p>
+            </div>
+            <div class="feature-card glass-card">
+              <div class="feature-icon gradient-bg"><i data-lucide="brain"></i></div>
+              <h3>Smart Summaries</h3>
+              <p>AI-generated executive summaries, action items, and key decisions.</p>
+            </div>
+            <div class="feature-card glass-card">
+              <div class="feature-icon gradient-bg"><i data-lucide="users"></i></div>
+              <h3>Speaker Analytics</h3>
+              <p>Identify speakers, track participation, and analyze engagement.</p>
+            </div>
+            <div class="feature-card glass-card">
+              <div class="feature-icon gradient-bg"><i data-lucide="file-text"></i></div>
+              <h3>PDF Reports</h3>
+              <p>Professional, branded PDF reports ready to share with stakeholders.</p>
+            </div>
+            <div class="feature-card glass-card">
+              <div class="feature-icon gradient-bg"><i data-lucide="message-circle"></i></div>
+              <h3>AI Chat</h3>
+              <p>Ask questions about your meetings and get instant AI-powered answers.</p>
+            </div>
+            <div class="feature-card glass-card">
+              <div class="feature-icon gradient-bg"><i data-lucide="shield-check"></i></div>
+              <h3>Secure & Private</h3>
+              <p>Enterprise-grade security with encrypted storage and data protection.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Testimonials -->
+      <section class="testimonials-section">
+        <div class="section-container">
+          <div class="section-header">
+            <span class="section-badge">Testimonials</span>
+            <h2>Loved by <span class="gradient-text">Teams Worldwide</span></h2>
+          </div>
+          <div class="testimonials-grid">
+            <div class="testimonial-card glass-card">
+              <div class="stars">★★★★★</div>
+              <p>"MeetIQ has completely transformed how our team handles meetings. The AI summaries save us hours every week."</p>
+              <div class="testimonial-author">
+                <div class="author-avatar">SK</div>
+                <div><strong>Sarah Kim</strong><span>Product Manager, TechCorp</span></div>
+              </div>
+            </div>
+            <div class="testimonial-card glass-card">
+              <div class="stars">★★★★★</div>
+              <p>"The speaker analytics and action item extraction are incredibly accurate. A must-have for any team."</p>
+              <div class="testimonial-author">
+                <div class="author-avatar">MR</div>
+                <div><strong>Mike Rodriguez</strong><span>CTO, StartupXYZ</span></div>
+              </div>
+            </div>
+            <div class="testimonial-card glass-card">
+              <div class="stars">★★★★★</div>
+              <p>"We've cut our meeting follow-up time by 70%. The PDF reports are professional and stakeholder-ready."</p>
+              <div class="testimonial-author">
+                <div class="author-avatar">EJ</div>
+                <div><strong>Emily Johnson</strong><span>VP Engineering, ScaleUp</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Pricing -->
+      <section class="pricing-section" id="pricing">
+        <div class="section-container">
+          <div class="section-header">
+            <span class="section-badge">Pricing</span>
+            <h2>Simple, <span class="gradient-text">Transparent</span> Pricing</h2>
+          </div>
+          <div class="pricing-grid">
+            <div class="pricing-card glass-card">
+              <h3>Free</h3>
+              <div class="price"><span class="currency">$</span>0<span class="period">/mo</span></div>
+              <ul class="pricing-features">
+                <li><i data-lucide="check"></i> 5 meetings/month</li>
+                <li><i data-lucide="check"></i> AI transcription</li>
+                <li><i data-lucide="check"></i> Basic summaries</li>
+                <li><i data-lucide="check"></i> PDF export</li>
+              </ul>
+              <button class="btn btn-outline btn-full" onclick="showAuth('signup')">Get Started</button>
+            </div>
+            <div class="pricing-card glass-card popular">
+              <div class="popular-badge">Most Popular</div>
+              <h3>Pro</h3>
+              <div class="price"><span class="currency">$</span>19<span class="period">/mo</span></div>
+              <ul class="pricing-features">
+                <li><i data-lucide="check"></i> Unlimited meetings</li>
+                <li><i data-lucide="check"></i> Advanced AI analysis</li>
+                <li><i data-lucide="check"></i> Speaker analytics</li>
+                <li><i data-lucide="check"></i> AI Chat assistant</li>
+                <li><i data-lucide="check"></i> Priority support</li>
+              </ul>
+              <button class="btn btn-primary btn-full" onclick="showAuth('signup')">Start Free Trial</button>
+            </div>
+            <div class="pricing-card glass-card">
+              <h3>Enterprise</h3>
+              <div class="price"><span class="currency">$</span>49<span class="period">/mo</span></div>
+              <ul class="pricing-features">
+                <li><i data-lucide="check"></i> Everything in Pro</li>
+                <li><i data-lucide="check"></i> Team workspace</li>
+                <li><i data-lucide="check"></i> Custom branding</li>
+                <li><i data-lucide="check"></i> API access</li>
+                <li><i data-lucide="check"></i> SSO & SAML</li>
+              </ul>
+              <button class="btn btn-outline btn-full" onclick="showAuth('signup')">Contact Sales</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- FAQ -->
+      <section class="faq-section" id="faq">
+        <div class="section-container">
+          <div class="section-header">
+            <span class="section-badge">FAQ</span>
+            <h2>Frequently Asked <span class="gradient-text">Questions</span></h2>
+          </div>
+          <div class="faq-list">
+            <div class="faq-item glass-card" onclick="toggleFaq(this)">
+              <div class="faq-question"><span>What file formats are supported?</span><i data-lucide="chevron-down"></i></div>
+              <div class="faq-answer"><p>MeetIQ supports MP4, MOV, AVI for video and WAV, MP3, M4A for audio files. Maximum file size is 500MB.</p></div>
+            </div>
+            <div class="faq-item glass-card" onclick="toggleFaq(this)">
+              <div class="faq-question"><span>How accurate is the transcription?</span><i data-lucide="chevron-down"></i></div>
+              <div class="faq-answer"><p>Our AI uses OpenAI Whisper, achieving 95-98% accuracy for clear audio. Results may vary based on audio quality and background noise.</p></div>
+            </div>
+            <div class="faq-item glass-card" onclick="toggleFaq(this)">
+              <div class="faq-question"><span>Is my data secure?</span><i data-lucide="chevron-down"></i></div>
+              <div class="faq-answer"><p>Yes. All data is encrypted in transit and at rest. We use industry-standard security practices including JWT authentication and rate limiting.</p></div>
+            </div>
+            <div class="faq-item glass-card" onclick="toggleFaq(this)">
+              <div class="faq-question"><span>How long does analysis take?</span><i data-lucide="chevron-down"></i></div>
+              <div class="faq-answer"><p>Typically 2-5 minutes depending on the meeting length. You'll be notified when your report is ready.</p></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Footer -->
+      <footer class="landing-footer">
+        <div class="footer-content">
+          <div class="footer-brand">
+            <div class="landing-logo"><span class="logo-icon">🧠</span><span>MeetIQ</span></div>
+            <p>AI-powered meeting intelligence platform for modern teams.</p>
+          </div>
+          <div class="footer-links">
+            <div class="footer-col"><h4>Product</h4><a href="#features">Features</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a></div>
+            <div class="footer-col"><h4>Company</h4><a href="#">About</a><a href="#">Blog</a><a href="#">Careers</a></div>
+            <div class="footer-col"><h4>Legal</h4><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Security</a></div>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <p>&copy; 2024 MeetIQ. All rights reserved. Built with ❤️ and AI.</p>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/pages.js"></script>
+  <script src="/js/pages2.js"></script>
+  <script src="/js/pages3.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>
