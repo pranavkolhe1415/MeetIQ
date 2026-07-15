@@ -49,7 +49,7 @@ function initApp() {
   if (isAuthenticated()) {
     showApp();
     navigateTo('dashboard');
-    loadNotifications();
+    // loadNotifications();
   } else {
     showLanding();
   }
@@ -167,7 +167,8 @@ function setupNotifications() {
 
 async function loadNotifications() {
   try {
-    const res = await api.getNotifications();
+   
+    // const res = await api.getNotifications();
     const notifs = res.data.notifications || [];
     const unread = res.data.unreadCount || 0;
     const badge = document.getElementById('notification-badge');

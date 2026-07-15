@@ -5,3 +5,15 @@ uploads/*
 *.log
 .DS_Store
 Thumbs.db
+# Whisper models
+*.bin
+
+# Whisper binaries
+whisper/
+
+# Windows binaries
+*.exe
+*.dll
+
+# Node
+node_modules/

@@ -71,7 +71,8 @@ async function renderReport(meetingId) {
   const container = document.getElementById('page-content');
   container.innerHTML = '<div class="empty-state"><p>Loading report...</p></div>';
   try {
-    const res = await api.getReport(meetingId);
+    // const res = await api.getReport(meetingId);
+     const res = await api.getMeeting(id);
     const m = res.data.meeting;
     buildReportPage(m);
     // Load chat history
@@ -265,7 +266,8 @@ async function sendChatMessage(meetingId) {
   chatBox.scrollTop = chatBox.scrollHeight;
 
   try {
-    const res = await api.sendChat(meetingId, msg);
+    // const res = await api.sendChat(meetingId, msg);
+    const res = await api.askAI(meetingId, msg);
     chatBox.innerHTML += `<div class="chat-message assistant">${esc(res.data.answer)}</div>`;
   } catch {
     chatBox.innerHTML += `<div class="chat-message assistant">Sorry, I couldn't process your question. Please try again.</div>`;

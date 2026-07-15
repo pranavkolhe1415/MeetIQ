@@ -1,126 +1,479 @@
 /**
- * Meeting Model
- * Stores meeting recordings, transcripts, and analysis results
+ * ==========================================================
+ * MeetIQ Meeting Model
+ * ==========================================================
  */
-const mongoose = require('mongoose');
 
-const participantSchema = new mongoose.Schema({
-  name: { type: String, default: 'Unknown Speaker' },
-  speakerId: { type: String },
-  avatar: { type: String, default: '' },
-  speakingTime: { type: Number, default: 0 }, // seconds
-  speakingPercentage: { type: Number, default: 0 },
-  speechCount: { type: Number, default: 0 },
-}, { _id: false });
+const mongoose = require("mongoose");
 
-const transcriptSegmentSchema = new mongoose.Schema({
-  speaker: { type: String, default: 'Speaker' },
-  speakerId: { type: String },
-  text: { type: String, required: true },
-  startTime: { type: Number, required: true }, // seconds
-  endTime: { type: Number, required: true },
-}, { _id: true });
+/* ==========================================================
+   Transcript Segment
+========================================================== */
 
-const actionItemSchema = new mongoose.Schema({
-  text: { type: String, required: true },
-  assignee: { type: String, default: 'Unassigned' },
-  priority: { type: String, enum: ['high', 'medium', 'low'], default: 'medium' },
-  dueDate: { type: String, default: '' },
-  completed: { type: Boolean, default: false },
-}, { _id: true });
+const transcriptSchema = new mongoose.Schema({
 
-const decisionSchema = new mongoose.Schema({
-  text: { type: String, required: true },
-  madeBy: { type: String, default: '' },
-  timestamp: { type: Number, default: 0 },
-}, { _id: true });
+    text: {
+        type: String,
+        required: true
+    },
 
-const quoteSchema = new mongoose.Schema({
-  text: { type: String, required: true },
-  speaker: { type: String, default: '' },
-  timestamp: { type: Number, default: 0 },
-  context: { type: String, default: '' },
-}, { _id: true });
+    startTime: {
+        type: Number,
+        default: 0
+    },
 
-const meetingSchema = new mongoose.Schema({
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-    index: true,
-  },
-  title: {
-    type: String,
-    required: [true, 'Meeting title is required'],
-    trim: true,
-    default: 'Untitled Meeting',
-  },
-  description: {
-    type: String,
-    trim: true,
-    default: '',
-  },
-  // File info
-  originalFileName: { type: String },
-  fileName: { type: String },
-  filePath: { type: String },
-  fileSize: { type: Number, default: 0 },
-  fileType: { type: String }, // video or audio
-  mimeType: { type: String },
-  duration: { type: Number, default: 0 }, // seconds
-  thumbnail: { type: String, default: '' },
+    endTime: {
+        type: Number,
+        default: 0
+    }
 
-  // Processing status
-  status: {
-    type: String,
-    enum: ['uploaded', 'processing', 'extracting_audio', 'transcribing', 'diarizing', 'analyzing', 'summarizing', 'generating_report', 'completed', 'failed'],
-    default: 'uploaded',
-  },
-  processingProgress: { type: Number, default: 0, min: 0, max: 100 },
-  processingStep: { type: String, default: '' },
-  errorMessage: { type: String, default: '' },
-
-  // AI Analysis Results
-  transcript: [transcriptSegmentSchema],
-  fullTranscript: { type: String, default: '' },
-  
-  // Summary sections
-  executiveSummary: { type: String, default: '' },
-  meetingOverview: { type: String, default: '' },
-  
-  // Participants
-  participants: [participantSchema],
-  
-  // Key items
-  actionItems: [actionItemSchema],
-  decisions: [decisionSchema],
-  importantQuotes: [quoteSchema],
-  
-  // Metrics
-  metrics: {
-    totalSpeakers: { type: Number, default: 0 },
-    totalWords: { type: Number, default: 0 },
-    averageSentiment: { type: String, default: 'neutral' },
-    engagementScore: { type: Number, default: 0 },
-    topicsDiscussed: [{ type: String }],
-    meetingEfficiency: { type: Number, default: 0 },
-  },
-
-  // PDF
-  pdfPath: { type: String, default: '' },
-  pdfGenerated: { type: Boolean, default: false },
-
-  // Tags
-  tags: [{ type: String }],
-  
-  // Meeting date (user can override)
-  meetingDate: { type: Date, default: Date.now },
 }, {
-  timestamps: true,
+    _id: false
 });
 
-// Index for searching
-meetingSchema.index({ title: 'text', fullTranscript: 'text' });
-meetingSchema.index({ user: 1, createdAt: -1 });
+/* ==========================================================
+   Action Item
+========================================================== */
 
-module.exports = mongoose.model('Meeting', meetingSchema);
+const actionItemSchema = new mongoose.Schema({
+
+    text: {
+        type: String,
+        required: true
+    },
+
+    assignee: {
+        type: String,
+        default: "Unassigned"
+    },
+
+    priority: {
+        type: String,
+        enum: ["High", "medium", "low"],
+        default: "medium"
+    },
+
+    dueDate: {
+        type: String,
+        default: ""
+    },
+
+    completed: {
+        type: Boolean,
+        default: false
+    }
+
+}, {
+    _id: false
+});
+
+/* ==========================================================
+   Decision
+========================================================== */
+
+const decisionSchema = new mongoose.Schema({
+
+    text: {
+        type: String,
+        required: true
+    },
+
+    madeBy: {
+        type: String,
+        default: ""
+    }
+
+}, {
+    _id: false
+});
+
+/* ==========================================================
+   Deadline
+========================================================== */
+
+const deadlineSchema = new mongoose.Schema({
+
+    task: {
+        type: String,
+        default: ""
+    },
+
+    date: {
+        type: String,
+        default: ""
+    }
+
+}, {
+    _id: false
+});
+
+/* ==========================================================
+   Quote
+========================================================== */
+
+const quoteSchema = new mongoose.Schema({
+
+    text: {
+        type: String,
+        required: true
+    },
+
+    speaker: {
+        type: String,
+        default: ""
+    }
+
+}, {
+    _id: false
+});
+
+const meetingSchema = new mongoose.Schema({
+
+    /* ======================================================
+       Owner
+    ====================================================== */
+
+    user:{
+
+        type:mongoose.Schema.Types.ObjectId,
+
+        ref:"User",
+
+        required:true,
+
+        index:true
+
+    },
+
+    /* ======================================================
+       Basic Information
+    ====================================================== */
+
+    title:{
+
+        type:String,
+
+        default:"Untitled Meeting",
+
+        trim:true
+
+    },
+
+    description:{
+
+        type:String,
+
+        default:""
+
+    },
+
+    meetingDate:{
+
+        type:Date,
+
+        default:Date.now
+
+    },
+
+    /* ======================================================
+       Uploaded File
+    ====================================================== */
+
+    originalFileName:String,
+
+    fileName:String,
+
+    filePath:String,
+
+    fileSize:{
+
+        type:Number,
+
+        default:0
+
+    },
+
+    fileType:String,
+
+    mimeType:String,
+
+    duration:{
+
+        type:Number,
+
+        default:0
+
+    },
+
+    thumbnail:{
+
+        type:String,
+
+        default:""
+
+    },
+
+    /* ======================================================
+       Processing
+    ====================================================== */
+
+    status:{
+
+        type:String,
+
+        enum:[
+
+            "uploaded",
+
+            "processing",
+
+            "extracting_audio",
+
+            "transcribing",
+
+            "analyzing",
+
+            "generating_report",
+
+            "completed",
+
+            "failed"
+
+        ],
+
+        default:"uploaded"
+
+    },
+
+    processingProgress:{
+
+        type:Number,
+
+        default:0
+
+    },
+
+    processingStep:{
+
+        type:String,
+
+        default:""
+
+    },
+
+    processingTime:{
+
+        type:Number,
+
+        default:0
+
+    },
+
+    errorMessage:{
+
+        type:String,
+
+        default:""
+
+    },
+
+    aiModel:{
+
+        type:String,
+
+        default:"gemma2:2b"
+
+    },
+
+    language:{
+
+        type:String,
+
+        default:"English"
+
+    },
+
+    readingMinutes:{
+
+        type:Number,
+
+        default:0
+
+    },
+
+    /* ======================================================
+       Transcript
+    ====================================================== */
+
+    fullTranscript:{
+
+        type:String,
+
+        default:""
+
+    },
+
+    transcript:[transcriptSchema],
+
+    /* ======================================================
+       AI Summaries
+    ====================================================== */
+
+    executiveSummary:{
+
+        type:String,
+
+        default:""
+
+    },
+
+    meetingOverview:{
+
+        type:String,
+
+        default:""
+
+    },
+
+    detailedSummary:{
+
+        type:String,
+
+        default:""
+
+    },
+
+    keyDiscussionPoints:[
+
+        {
+
+            type:String
+
+        }
+
+    ],
+
+    /* ======================================================
+       AI Results
+    ====================================================== */
+
+    actionItems:[actionItemSchema],
+
+    decisions:[decisionSchema],
+
+    deadlines:[deadlineSchema],
+
+    risks:[
+
+        {
+
+            type:String
+
+        }
+
+    ],
+
+    blockers:[
+
+        {
+
+            type:String
+
+        }
+
+    ],
+
+    nextSteps:[
+
+        {
+
+            type:String
+
+        }
+
+    ],
+
+    importantQuotes:[quoteSchema],
+
+    /* ======================================================
+       Metrics
+    ====================================================== */
+
+    metrics:{
+
+        totalWords:{
+
+            type:Number,
+
+            default:0
+
+        },
+
+        engagementScore:{
+
+            type:Number,
+
+            default:0
+
+        },
+
+        meetingEfficiency:{
+
+            type:Number,
+
+            default:0
+
+        }
+
+    },
+
+    /* ======================================================
+       PDF
+    ====================================================== */
+
+    pdfPath:{
+
+        type:String,
+
+        default:""
+
+    },
+
+    pdfGenerated:{
+
+        type:Boolean,
+
+        default:false
+
+    }
+
+},{
+    timestamps:true
+});
+meetingSchema.index({
+
+    title:"text",
+
+    fullTranscript:"text",
+
+    executiveSummary:"text",
+
+    detailedSummary:"text"
+
+});
+
+meetingSchema.index({
+
+    user:1,
+
+    createdAt:-1
+
+});
+
+module.exports = mongoose.model(
+
+    "Meeting",
+
+    meetingSchema
+
+);

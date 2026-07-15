@@ -1,121 +1,384 @@
 /**
- * MeetIQ API Client
- * Handles all HTTP requests to the backend
+ * ==========================================================
+ * MeetIQ API Service
+ * ==========================================================
  */
-const API_BASE = '/api';
 
-class APIClient {
-  constructor() {
-    this.token = localStorage.getItem('meetiq_token') || null;
-  }
+class API {
 
-  setToken(token) {
-    this.token = token;
-    if (token) localStorage.setItem('meetiq_token', token);
-    else localStorage.removeItem('meetiq_token');
-  }
+    constructor() {
 
-  getToken() {
-    return this.token || localStorage.getItem('meetiq_token');
-  }
+        this.baseURL = "http://localhost:3000/api";
 
-  async request(endpoint, options = {}) {
-    const url = `${API_BASE}${endpoint}`;
-    const headers = { ...options.headers };
+        this.token =
+            localStorage.getItem("meetiq_token") || "";
 
-    if (this.getToken()) {
-      headers['Authorization'] = `Bearer ${this.getToken()}`;
     }
+    getDashboard() {
 
-    if (!(options.body instanceof FormData)) {
-      headers['Content-Type'] = 'application/json';
-      if (options.body && typeof options.body === 'object') {
-        options.body = JSON.stringify(options.body);
-      }
-    }
+    return this.request("/meetings");
 
-    try {
-      const response = await fetch(url, { ...options, headers });
-      const data = await response.json();
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          this.setToken(null);
-          localStorage.removeItem('meetiq_user');
-          if (typeof showAuth === 'function') showAuth('login');
-        }
-        throw new Error(data.message || 'Request failed');
-      }
-
-      return data;
-    } catch (error) {
-      if (error.message === 'Failed to fetch') {
-        throw new Error('Network error. Please check your connection.');
-      }
-      throw error;
-    }
-  }
-
-  get(endpoint) { return this.request(endpoint); }
-  post(endpoint, body) { return this.request(endpoint, { method: 'POST', body }); }
-  put(endpoint, body) { return this.request(endpoint, { method: 'PUT', body }); }
-  delete(endpoint) { return this.request(endpoint, { method: 'DELETE' }); }
-
-  async uploadFile(file, title, onProgress) {
-    const formData = new FormData();
-    formData.append('file', file);
-    if (title) formData.append('title', title);
-
-    return new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.open('POST', `${API_BASE}/meetings/upload`);
-      if (this.getToken()) xhr.setRequestHeader('Authorization', `Bearer ${this.getToken()}`);
-
-      xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable && onProgress) {
-          onProgress(Math.round((e.loaded / e.total) * 100));
-        }
-      };
-
-      xhr.onload = () => {
-        try {
-          const data = JSON.parse(xhr.responseText);
-          if (xhr.status >= 200 && xhr.status < 300) resolve(data);
-          else reject(new Error(data.message || 'Upload failed'));
-        } catch { reject(new Error('Upload failed')); }
-      };
-
-      xhr.onerror = () => reject(new Error('Network error'));
-      xhr.send(formData);
-    });
-  }
-
-  // Auth
-  signup(data) { return this.post('/auth/signup', data); }
-  login(data) { return this.post('/auth/login', data); }
-  getProfile() { return this.get('/auth/profile'); }
-  updateProfile(data) { return this.put('/auth/profile', data); }
-  updatePassword(data) { return this.put('/auth/password', data); }
-  updateSettings(data) { return this.put('/auth/settings', data); }
-
-  // Meetings
-  getDashboard() { return this.get('/meetings/dashboard'); }
-  getMeetings(params = '') { return this.get(`/meetings${params ? '?' + params : ''}`); }
-  getMeeting(id) { return this.get(`/meetings/${id}`); }
-  analyzeMeeting(id) { return this.post(`/meetings/${id}/analyze`); }
-  getProgress(id) { return this.get(`/meetings/${id}/progress`); }
-  getReport(id) { return this.get(`/meetings/${id}/report`); }
-  deleteMeeting(id) { return this.delete(`/meetings/${id}`); }
-  downloadPDF(id) { return `${API_BASE}/meetings/${id}/pdf?token=${this.getToken()}`; }
-
-  // Chat
-  sendChat(meetingId, message) { return this.post('/chat', { meetingId, message }); }
-  getChatHistory(meetingId) { return this.get(`/chat/${meetingId}`); }
-
-  // Notifications
-  getNotifications() { return this.get('/notifications'); }
-  markNotificationRead(id) { return this.put(`/notifications/${id}/read`); }
-  markAllRead() { return this.put('/notifications/all/read'); }
 }
 
-const api = new APIClient();
+    setToken(token) {
+
+        this.token = token;
+
+        if (token) {
+
+            localStorage.setItem(
+                "meetiq_token",
+                token
+            );
+
+        } else {
+
+            localStorage.removeItem(
+                "meetiq_token"
+            );
+
+        }
+
+    }
+
+    getToken() {
+
+        return this.token;
+
+    }
+
+    async request(url, options = {}) {
+
+        const headers = {
+
+            ...(options.headers || {})
+
+        };
+
+        if (!(options.body instanceof FormData)) {
+
+            headers["Content-Type"] =
+                "application/json";
+
+        }
+
+        if (this.token) {
+
+            headers.Authorization =
+                `Bearer ${this.token}`;
+
+        }
+
+        const response = await fetch(
+
+            this.baseURL + url,
+
+            {
+
+                ...options,
+
+                headers
+
+            }
+
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+
+            throw new Error(
+
+                data.message ||
+
+                "Request Failed"
+
+            );
+
+        }
+
+        return data;
+
+    }
+
+    /* ==============================
+       AUTH
+    ============================== */
+
+    signup(body) {
+
+        return this.request(
+
+            "/auth/signup",
+
+            {
+
+                method: "POST",
+
+                body: JSON.stringify(body)
+
+            }
+
+        );
+
+    }
+
+    login(body) {
+
+        return this.request(
+
+            "/auth/login",
+
+            {
+
+                method: "POST",
+
+                body: JSON.stringify(body)
+
+            }
+
+        );
+
+    }
+
+    getProfile() {
+
+        return this.request(
+
+            "/auth/profile"
+
+        );
+
+    }
+uploadFile(file, title, onProgress) {
+
+    return new Promise((resolve, reject) => {
+
+        const formData = new FormData();
+
+        formData.append("meeting", file);
+
+        formData.append("title", title);
+
+        const xhr = new XMLHttpRequest();
+
+        xhr.open(
+            "POST",
+            this.baseURL + "/meetings/upload"
+        );
+
+        const token = localStorage.getItem("meetiq_token");
+
+        if (token) {
+
+            xhr.setRequestHeader(
+                "Authorization",
+                `Bearer ${token}`
+            );
+
+        }
+
+        xhr.upload.onprogress = (e) => {
+
+            if (e.lengthComputable && onProgress) {
+
+                onProgress(
+                    Math.round((e.loaded / e.total) * 100)
+                );
+
+            }
+
+        };
+
+        xhr.onload = () => {
+
+            try {
+
+                const response = JSON.parse(xhr.responseText);
+
+                if (xhr.status >= 200 && xhr.status < 300) {
+
+                    resolve(response);
+
+                } else {
+
+                    reject(new Error(response.message || "Upload failed"));
+
+                }
+
+            } catch {
+
+                reject(new Error("Invalid server response"));
+
+            }
+
+        };
+
+        xhr.onerror = () => {
+
+            reject(new Error("Upload failed"));
+
+        };
+
+        xhr.send(formData);
+
+    });
+
+}
+    /* ==============================
+       MEETINGS
+    ============================== */
+
+    uploadMeeting(file, title) {
+
+        const form = new FormData();
+
+        form.append("meeting", file);
+
+        form.append(
+
+            "title",
+
+            title
+
+        );
+
+        return this.request(
+
+            "/meetings/upload",
+
+            {
+
+                method: "POST",
+
+                body: form
+
+            }
+
+        );
+
+    }
+
+    analyzeMeeting(id) {
+
+    return this.request(
+
+        `/meetings/${id}/process`,
+
+        {
+
+            method:"POST"
+
+        }
+
+    );
+
+}
+
+    // getProgress(id) {
+
+    //     return this.request(
+
+    //         `/meetings/${id}/progress`
+
+    //     );
+
+    // }
+
+    getMeetings() {
+
+        return this.request(
+
+            "/meetings"
+
+        );
+
+    }
+
+    getMeeting(id) {
+
+        return this.request(
+
+            `/meetings/${id}`
+
+        );
+
+    }
+
+    deleteMeeting(id) {
+
+        return this.request(
+
+            `/meetings/${id}`,
+
+            {
+
+                method: "DELETE"
+
+            }
+
+        );
+
+    }
+
+    downloadPDF(id) {
+
+        window.open(
+
+            `${this.baseURL}/meetings/${id}/pdf`,
+
+            "_blank"
+
+        );
+
+    }
+
+    /* ==============================
+       CHAT
+    ============================== */
+
+    askAI(id, message) {
+
+        return this.request(
+
+            `/chat/${id}`,
+
+            {
+
+                method: "POST",
+
+                body: JSON.stringify({
+
+                    message
+
+                })
+
+            }
+
+        );
+
+    }
+
+    getSummary(id) {
+
+        return this.request(
+
+            `/chat/${id}/summary`
+
+        );
+
+    }
+
+    getSuggestions(id) {
+
+        return this.request(
+
+            `/chat/${id}/suggestions`
+
+        );
+
+    }
+
+}
+
+const api = new API();

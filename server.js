@@ -12,7 +12,8 @@ const rateLimit = require('express-rate-limit');
 const connectDB = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
 const fs = require('fs');
-
+const chatRoutes =
+require("./routes/chat");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -48,7 +49,7 @@ app.use('/uploads', express.static(uploadsDir));
 
 // API Routes
 app.use('/api/auth', require('./routes/auth'));
-app.use('/api/meetings', require('./routes/meetings'));
+app.use('/api/meetings', require('./routes/meetingRoutes'));
 app.use('/api/chat', require('./routes/chat'));
 app.use('/api/notifications', require('./routes/notifications'));
 
@@ -64,6 +65,13 @@ app.get('*', (req, res) => {
 
 // Error handler
 app.use(errorHandler);
+app.use(
+
+    "/api/chat",
+
+    chatRoutes
+
+);
 
 // Connect DB and start server
 connectDB().then(() => {

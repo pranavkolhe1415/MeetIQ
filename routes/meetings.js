@@ -20,7 +20,7 @@ const {
 } = require('../controllers/meetingController');
 
 router.get('/dashboard', auth, getDashboardStats);
-router.post('/upload', auth, upload.single('file'), uploadMeeting);
+router.post('/upload', auth, upload.single('meeting'), uploadMeeting);
 router.post('/:id/analyze', auth, analyze);
 router.get('/:id/progress', auth, getProgress);
 router.get('/:id/report', auth, getReport);

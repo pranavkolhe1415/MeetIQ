@@ -1,67 +1,306 @@
 /**
- * Chat Service - AI-powered meeting Q&A using transcript context
+ * ==========================================================
+ * MeetIQ Chat Service
+ * ==========================================================
+ * Uses Ollama to answer questions about ONE meeting.
+ * ==========================================================
  */
-const fetch = require('node-fetch');
-const HF_API_URL = 'https://api-inference.huggingface.co/models';
 
-async function answerQuestion(question, transcript, participants) {
-  const lowerQ = question.toLowerCase();
+const ollama = require("./ollamaService");
 
-  // Local answers for common questions
-  if (lowerQ.includes('who talked') || lowerQ.includes('who spoke') || lowerQ.includes('most')) {
-    if (participants?.length) {
-      const sorted = [...participants].sort((a,b) => b.speakingTime - a.speakingTime);
-      const top = sorted[0];
-      return `${top.name} spoke the most with ${top.speakingPercentage}% of the total speaking time (${Math.round(top.speakingTime/60)} minutes, ${top.speechCount} turns).`;
+class ChatService {
+
+    /**
+     * Ask Ollama
+     */
+
+    async ask(prompt){
+
+        return await ollama.generate(prompt);
+
     }
-  }
+    /**
+     * ------------------------------------------------------
+     * Build Chat Prompt
+     * ------------------------------------------------------
+     */
 
-  if (lowerQ.includes('action item') || lowerQ.includes('to do') || lowerQ.includes('task')) {
-    return 'You can find all action items in the "Action Items" section on the right panel. They include task assignments, priorities, and deadlines identified from the meeting discussion.';
-  }
+    buildPrompt(meeting, question) {
 
-  if (lowerQ.includes('decision') || lowerQ.includes('decided')) {
-    return 'Check the "Key Decisions" section in the report panel for all decisions made during this meeting, including who proposed them and the context.';
-  }
+        return `
+You are MeetIQ AI.
 
-  if (lowerQ.includes('summarize') || lowerQ.includes('summary') || lowerQ.includes('overview')) {
-    if (transcript && transcript.length > 100) {
-      return transcript.substring(0, 500) + '...\n\nFor the full summary, check the Executive Summary section.';
+You answer questions ONLY using the meeting information below.
+
+If the answer does not exist in the meeting,
+reply exactly:
+
+"I couldn't find that information in this meeting."
+
+Never invent answers.
+Never use outside knowledge.
+Keep answers short and professional.
+
+==================================================
+
+MEETING TITLE
+
+${meeting.title}
+
+==================================================
+
+EXECUTIVE SUMMARY
+
+${meeting.executiveSummary}
+
+==================================================
+
+MEETING OVERVIEW
+
+${meeting.meetingOverview}
+
+==================================================
+
+DETAILED SUMMARY
+
+${meeting.detailedSummary}
+
+==================================================
+
+KEY DISCUSSION POINTS
+
+${(meeting.keyDiscussionPoints || []).join("\n")}
+
+==================================================
+
+ACTION ITEMS
+
+${JSON.stringify(meeting.actionItems || [], null, 2)}
+
+==================================================
+
+DECISIONS
+
+${JSON.stringify(meeting.decisions || [], null, 2)}
+
+==================================================
+
+DEADLINES
+
+${JSON.stringify(meeting.deadlines || [], null, 2)}
+
+==================================================
+
+RISKS
+
+${(meeting.risks || []).join("\n")}
+
+==================================================
+
+BLOCKERS
+
+${(meeting.blockers || []).join("\n")}
+
+==================================================
+
+NEXT STEPS
+
+${(meeting.nextSteps || []).join("\n")}
+
+==================================================
+
+IMPORTANT QUOTES
+
+${JSON.stringify(meeting.importantQuotes || [], null, 2)}
+
+==================================================
+
+TRANSCRIPT
+
+${meeting.fullTranscript}
+
+==================================================
+
+QUESTION
+
+${question}
+
+==================================================
+
+ANSWER
+`;
+
     }
-  }
+        /**
+     * ------------------------------------------------------
+     * Chat with Meeting
+     * ------------------------------------------------------
+     */
 
-  if (lowerQ.includes('participant') || lowerQ.includes('attendee') || lowerQ.includes('people')) {
-    if (participants?.length) {
-      const list = participants.map(p => `• ${p.name} (${p.speakingPercentage}%)`).join('\n');
-      return `Meeting participants:\n${list}`;
+    async chat(meeting, question) {
+
+        try {
+
+            if (!meeting) {
+
+                throw new Error("Meeting not found.");
+
+            }
+
+            if (!question || !question.trim()) {
+
+                throw new Error("Question is required.");
+
+            }
+
+            const prompt = this.buildPrompt(
+
+                meeting,
+
+                question
+
+            );
+
+                        const local = this.localAnswer(
+
+                meeting,
+
+                question
+
+            );
+
+            if (local) {
+
+                return {
+
+                    success: true,
+
+                    answer: local
+
+                };
+
+            }
+
+            const response = await this.ask(
+
+                prompt
+
+            );
+
+            return {
+
+                success: true,
+
+                answer: response.trim()
+
+            };
+
+        }
+
+        catch (error) {
+
+            console.error(
+
+                "Chat Error:",
+
+                error.message
+
+            );
+
+            return {
+
+                success: false,
+
+                answer:
+
+                    "Sorry, I couldn't answer that question."
+
+            };
+
+        }
+
     }
-  }
+        /**
+     * ------------------------------------------------------
+     * Suggested Questions
+     * ------------------------------------------------------
+     */
 
-  // Try HuggingFace for general questions
-  try {
-    const context = transcript?.substring(0, 2000) || '';
-    const result = await fetch(`${HF_API_URL}/google/flan-t5-large`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.HF_API_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        inputs: `Answer based on this meeting transcript:\n${context}\n\nQuestion: ${question}`,
-        parameters: { max_new_tokens: 300, temperature: 0.5 },
-      }),
-    });
+    getSuggestions() {
 
-    if (result.ok) {
-      const data = await result.json();
-      if (data?.[0]?.generated_text) return data[0].generated_text;
+        return [
+
+            "Summarize this meeting",
+
+            "What are the action items?",
+
+            "What decisions were made?",
+
+            "What are the deadlines?",
+
+            "What are the next steps?",
+
+            "What risks were identified?",
+
+            "Who is responsible for each task?",
+
+            "What did Rahul commit to?",
+
+            "Is deployment discussed?",
+
+            "Was authentication mentioned?"
+
+        ];
+
     }
-  } catch (e) {
-    console.error('Chat AI error:', e.message);
-  }
+        /**
+     * ------------------------------------------------------
+     * Fast Local Answers
+     * ------------------------------------------------------
+     */
 
-  // Fallback response
-  return `Based on the meeting transcript, I can help you with:\n• Meeting summary and overview\n• Who spoke the most\n• Action items and tasks\n• Key decisions made\n• Searching the transcript\n\nPlease try asking a more specific question about the meeting content.`;
+    localAnswer(meeting, question) {
+
+        const q = question.toLowerCase();
+
+        if (q.includes("action")) {
+
+            return meeting.actionItems;
+
+        }
+
+        if (q.includes("decision")) {
+
+            return meeting.decisions;
+
+        }
+
+        if (q.includes("deadline")) {
+
+            return meeting.deadlines;
+
+        }
+
+        if (q.includes("risk")) {
+
+            return meeting.risks;
+
+        }
+
+        if (q.includes("blocker")) {
+
+            return meeting.blockers;
+
+        }
+
+        if (q.includes("next")) {
+
+            return meeting.nextSteps;
+
+        }
+
+        return null;
+
+    }
 }
-
-module.exports = { answerQuestion };
+module.exports = new ChatService();
