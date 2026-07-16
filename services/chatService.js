@@ -25,21 +25,24 @@ class ChatService {
      * ------------------------------------------------------
      */
 
-    buildPrompt(meeting, question) {
+   buildPrompt(meeting, question) {
 
-        return `
+    return `
+
 You are MeetIQ AI.
 
-You answer questions ONLY using the meeting information below.
+Answer ONLY using the meeting information below.
 
-If the answer does not exist in the meeting,
-reply exactly:
+Rules:
+
+- Do NOT invent information.
+- Do NOT use outside knowledge.
+- If the answer is not present in the meeting, reply:
 
 "I couldn't find that information in this meeting."
 
-Never invent answers.
-Never use outside knowledge.
-Keep answers short and professional.
+- Keep answers under 120 words.
+- Use bullet points whenever appropriate.
 
 ==================================================
 
@@ -51,25 +54,7 @@ ${meeting.title}
 
 EXECUTIVE SUMMARY
 
-${meeting.executiveSummary}
-
-==================================================
-
-MEETING OVERVIEW
-
-${meeting.meetingOverview}
-
-==================================================
-
-DETAILED SUMMARY
-
-${meeting.detailedSummary}
-
-==================================================
-
-KEY DISCUSSION POINTS
-
-${(meeting.keyDiscussionPoints || []).join("\n")}
+${meeting.executiveSummary || "Not available"}
 
 ==================================================
 
@@ -85,39 +70,15 @@ ${JSON.stringify(meeting.decisions || [], null, 2)}
 
 ==================================================
 
-DEADLINES
-
-${JSON.stringify(meeting.deadlines || [], null, 2)}
-
-==================================================
-
-RISKS
-
-${(meeting.risks || []).join("\n")}
-
-==================================================
-
-BLOCKERS
-
-${(meeting.blockers || []).join("\n")}
-
-==================================================
-
 NEXT STEPS
 
 ${(meeting.nextSteps || []).join("\n")}
 
 ==================================================
 
-IMPORTANT QUOTES
-
-${JSON.stringify(meeting.importantQuotes || [], null, 2)}
-
-==================================================
-
 TRANSCRIPT
 
-${meeting.fullTranscript}
+${meeting.fullTranscript || ""}
 
 ==================================================
 
@@ -128,9 +89,10 @@ ${question}
 ==================================================
 
 ANSWER
+
 `;
 
-    }
+}
         /**
      * ------------------------------------------------------
      * Chat with Meeting
@@ -211,9 +173,9 @@ ANSWER
 
                 success: false,
 
-                answer:
+               answer:
 
-                    "Sorry, I couldn't answer that question."
+"I couldn't find that information in this meeting. Try asking about the summary, action items, decisions, or next steps."
 
             };
 
@@ -228,31 +190,27 @@ ANSWER
 
     getSuggestions() {
 
-        return [
+    return [
 
-            "Summarize this meeting",
+        "Summarize this meeting",
 
-            "What are the action items?",
+        "Give a short executive summary",
 
-            "What decisions were made?",
+        "List all action items",
 
-            "What are the deadlines?",
+        "Who is assigned each task?",
 
-            "What are the next steps?",
+        "What decisions were made?",
 
-            "What risks were identified?",
+        "What are the next steps?",
 
-            "Who is responsible for each task?",
+        "Which task has the highest priority?",
 
-            "What did Rahul commit to?",
+        "List all pending work"
 
-            "Is deployment discussed?",
+    ];
 
-            "Was authentication mentioned?"
-
-        ];
-
-    }
+}
         /**
      * ------------------------------------------------------
      * Fast Local Answers
@@ -261,46 +219,55 @@ ANSWER
 
     localAnswer(meeting, question) {
 
-        const q = question.toLowerCase();
+    const q = question.toLowerCase();
 
-        if (q.includes("action")) {
+    if (q.includes("summary")) {
 
-            return meeting.actionItems;
-
-        }
-
-        if (q.includes("decision")) {
-
-            return meeting.decisions;
-
-        }
-
-        if (q.includes("deadline")) {
-
-            return meeting.deadlines;
-
-        }
-
-        if (q.includes("risk")) {
-
-            return meeting.risks;
-
-        }
-
-        if (q.includes("blocker")) {
-
-            return meeting.blockers;
-
-        }
-
-        if (q.includes("next")) {
-
-            return meeting.nextSteps;
-
-        }
-
-        return null;
+        return meeting.executiveSummary ||
+               "No executive summary available.";
 
     }
+
+    if (q.includes("action")) {
+
+        if (!meeting.actionItems.length)
+
+            return "No action items found.";
+
+        return meeting.actionItems
+            .map((a, i) =>
+                `${i + 1}. ${a.text}
+Assigned: ${a.assignee}
+Priority: ${a.priority}`)
+            .join("\n\n");
+
+    }
+
+    if (q.includes("decision")) {
+
+        if (!meeting.decisions.length)
+
+            return "No decisions found.";
+
+        return meeting.decisions
+            .map((d, i) =>
+                `${i + 1}. ${d.text}`)
+            .join("\n");
+
+    }
+
+    if (q.includes("next")) {
+
+        if (!meeting.nextSteps.length)
+
+            return "No next steps found.";
+
+        return meeting.nextSteps.join("\n");
+
+    }
+
+    return null;
+
+}
 }
 module.exports = new ChatService();

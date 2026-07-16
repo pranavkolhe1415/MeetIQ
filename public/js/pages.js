@@ -36,17 +36,34 @@ function renderDashboard() {
 }
 
 async function loadDashboardData() {
-  try {
-    const res = await api.getDashboard();
-    const s = res.data.stats;
-    document.getElementById('s-total').textContent = s.totalMeetings;
-    document.getElementById('s-done').textContent = s.completedMeetings;
 
-    allDashboardMeetings = res.data.recentMeetings || [];
-    filterAndRenderDashboard();
-  } catch (e) {
-    console.error('Dashboard load error:', e);
-  }
+    try {
+
+        const res = await api.getDashboard();
+
+        console.log(res);
+
+        const stats = res.data.stats;
+
+        document.getElementById("s-total").textContent =
+            stats.totalMeetings;
+
+        document.getElementById("s-done").textContent =
+            stats.completedMeetings;
+
+        allDashboardMeetings =
+            res.data.recentMeetings || [];
+
+        filterAndRenderDashboard();
+
+    }
+
+    catch (err) {
+
+        console.error(err);
+
+    }
+
 }
 
 function filterAndRenderDashboard() {
@@ -226,37 +243,109 @@ function cancelUpload() {
 }
 
 async function startUploadAndAnalyze() {
-  if (!selectedFile) { showToast('Please select a file', 'error'); return; }
-  const btn = document.getElementById('analyze-btn');
-  btn.disabled = true;
-  btn.innerHTML = '<span>Uploading...</span>';
 
-  const progress = document.getElementById('upload-progress');
-  progress.classList.remove('hidden');
+    if (!selectedFile) {
 
-  try {
-    const title = document.getElementById('meeting-title').value.trim();
-    const res = await api.uploadFile(selectedFile, title, (pct) => {
-      document.getElementById('progress-fill').style.width = pct + '%';
-      document.getElementById('progress-pct').textContent = pct + '%';
-    });
+        showToast("Please select a file", "error");
 
-    showToast('Upload complete! Starting analysis...', 'success');
-    const meetingId = res.data.meeting._id;
-    startAnalysis(meetingId);
-  } catch (error) {
-    showToast(error.message, 'error');
-    btn.disabled = false;
-    btn.innerHTML = '<i data-lucide="zap"></i> Analyze with AI';
-    lucide.createIcons();
-  }
+        return;
+
+    }
+
+    const btn = document.getElementById("analyze-btn");
+
+    btn.disabled = true;
+
+    btn.innerHTML = "<span>Uploading...</span>";
+
+    document
+        .getElementById("upload-progress")
+        .classList.remove("hidden");
+
+    try {
+
+        const title =
+            document
+                .getElementById("meeting-title")
+                .value
+                .trim();
+
+        const res =
+            await api.uploadFile(
+
+                selectedFile,
+
+                title,
+
+                (pct) => {
+
+                    document.getElementById(
+                        "progress-fill"
+                    ).style.width = pct + "%";
+
+                    document.getElementById(
+                        "progress-pct"
+                    ).textContent = pct + "%";
+
+                }
+
+            );
+
+        showToast(
+            "Upload complete! Starting analysis...",
+            "success"
+        );
+
+        const meetingId =
+            res.data.meeting._id;
+
+        await startAnalysis(meetingId);
+
+    }
+
+    catch (error) {
+
+        showToast(
+
+            error.message,
+
+            "error"
+
+        );
+
+        btn.disabled = false;
+
+        btn.innerHTML =
+            '<i data-lucide="zap"></i> Analyze with AI';
+
+        lucide.createIcons();
+
+    }
+
 }
 
 async function startAnalysis(meetingId) {
-  try {
-    await api.analyzeMeeting(meetingId);
-    navigateTo('processing', meetingId);
-  } catch (e) {
-    showToast(e.message || 'Failed to start analysis', 'error');
-  }
+
+    try {
+
+        // Go to processing screen FIRST
+        navigateTo("processing", meetingId);
+
+        // Small delay so the page renders
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        // Start backend processing
+        await api.analyzeMeeting(meetingId);
+
+    }
+
+    catch (e) {
+
+        showToast(
+            e.message || "Failed to start analysis",
+            "error"
+        );
+
+    }
+
 }

@@ -29,41 +29,136 @@ function renderProcessing(meetingId) {
 }
 
 async function pollProgress(meetingId, steps) {
-  const stepIds = steps.map(s => s.id);
-  let done = false;
-  while (!done) {
-    try {
-      const res = await api.getProgress(meetingId);
-      const m = res.data.meeting;
-      const status = m.status;
-      const progress = m.processingProgress || 0;
 
-      document.getElementById('proc-bar').style.width = progress + '%';
-      document.getElementById('proc-pct').textContent = progress + '%';
-      document.getElementById('proc-step').textContent = m.processingStep || status;
+    const stepIds = steps.map(s => s.id);
 
-      const currentIdx = stepIds.indexOf(status);
-      stepIds.forEach((sid, i) => {
-        const el = document.getElementById('step-' + sid);
-        if (!el) return;
-        if (i < currentIdx) { el.className = 'step-item completed'; el.querySelector('.step-status').textContent = 'Done'; }
-        else if (i === currentIdx) { el.className = 'step-item active'; el.querySelector('.step-status').textContent = 'In Progress'; }
-        else { el.className = 'step-item'; el.querySelector('.step-status').textContent = 'Waiting'; }
-      });
+    while (true) {
 
-      if (status === 'completed') {
-        done = true;
-        showToast('Analysis complete! 🎉', 'success');
-        setTimeout(() => navigateTo('report', meetingId), 1500);
-      } else if (status === 'failed') {
-        done = true;
-        showToast('Analysis failed: ' + (m.errorMessage || 'Unknown error'), 'error');
-      }
-    } catch (e) {
-      console.error('Poll error:', e);
+        try {
+
+            const res = await api.getMeeting(meetingId);
+
+            const meeting = res.data.meeting;
+
+            const progress = meeting.processingProgress || 0;
+
+            const status = meeting.status;
+
+            const currentStep = meeting.processingStep || "Preparing...";
+             const stepMap = {
+
+    "Waiting for processing": "upload",
+
+    "Starting AI Pipeline...": "upload",
+
+    "Extracting Audio": "extracting_audio",
+
+    "Generating Transcript": "transcribing",
+
+    "Identifying Speakers": "diarizing",
+
+    "Analyzing Meeting": "analyzing",
+
+    "Generating Summary": "summarizing",
+
+    "Generating PDF...": "generating_report",
+
+    "Completed": "completed"
+
+};
+
+const activeStep = stepMap[currentStep];
+
+const currentIndex = stepIds.indexOf(activeStep);
+            // Update Progress Bar
+            document.getElementById("proc-bar").style.width = progress + "%";
+            document.getElementById("proc-pct").innerText = progress + "%";
+            document.getElementById("proc-step").innerText = currentStep;
+
+            // Reset all steps
+            stepIds.forEach(id => {
+
+                const row = document.getElementById("step-" + id);
+
+                if (!row) return;
+
+                row.classList.remove("active", "completed");
+
+                row.querySelector(".step-status").innerText = "Waiting";
+
+            });
+
+          
+
+            if (currentIndex >= 0) {
+
+                for (let i = 0; i < currentIndex; i++) {
+
+                    const row = document.getElementById("step-" + stepIds[i]);
+
+                    row.classList.add("completed");
+
+                    row.querySelector(".step-status").innerText = "Done";
+
+                }
+
+                const active = document.getElementById("step-" + stepIds[currentIndex]);
+
+                active.classList.add("active");
+
+                active.querySelector(".step-status").innerText = "Running";
+
+            }
+
+            // Completed
+            if (status === "completed") {
+
+                stepIds.forEach(id => {
+
+                    const row = document.getElementById("step-" + id);
+
+                    row.classList.add("completed");
+
+                    row.querySelector(".step-status").innerText = "Done";
+
+                });
+
+                document.getElementById("proc-bar").style.width = "100%";
+                document.getElementById("proc-pct").innerText = "100%";
+                document.getElementById("proc-step").innerText = "Meeting Analysis Complete";
+
+                showToast("Analysis Completed!", "success");
+
+                setTimeout(() => {
+
+                    navigateTo("report", meetingId);
+
+                }, 1500);
+
+                break;
+
+            }
+
+            if (status === "failed") {
+
+                showToast("Meeting Processing Failed", "error");
+
+                break;
+
+            }
+
+        } catch (err) {
+
+            console.error(err);
+
+            break;
+
+        }
+
+        await new Promise(r => setTimeout(r, 1000));
+
     }
-    if (!done) await new Promise(r => setTimeout(r, 2000));
-  }
+
 }
 
 /* Report Page */
@@ -72,7 +167,7 @@ async function renderReport(meetingId) {
   container.innerHTML = '<div class="empty-state"><p>Loading report...</p></div>';
   try {
     // const res = await api.getReport(meetingId);
-     const res = await api.getMeeting(id);
+   const res = await api.getMeeting(meetingId);
     const m = res.data.meeting;
     buildReportPage(m);
     // Load chat history
@@ -113,37 +208,113 @@ function buildReportPage(m) {
         <!-- Transcript -->
         <div class="transcript-panel">
           <div class="transcript-header"><h3>Transcript</h3><div class="transcript-search"><input type="text" placeholder="Search transcript..." onkeyup="filterTranscript(this.value)"></div></div>
-          <div class="transcript-body" id="transcript-body">
-            ${(m.transcript||[]).map((seg,i) => `<div class="transcript-segment" data-start="${seg.startTime}" onclick="seekTo(${seg.startTime})"><span class="speaker-badge s${(m.participants||[]).findIndex(p=>p.name===seg.speaker)%5}">${esc(seg.speaker)}</span><span class="segment-text">${esc(seg.text)}</span><span class="segment-time">${formatTime(seg.startTime)}</span></div>`).join('')}
-          </div>
+        <div id="transcript-body">
+
+<pre class="full-transcript">
+
+${esc(m.fullTranscript || "Transcript not available.")}
+
+</pre>
+
+</div>
         </div>
         <!-- Timeline -->
         <div class="timeline-panel">
-          <div class="timeline-header"><h3>Timeline</h3></div>
-          <div class="timeline-body">
-            ${(m.transcript||[]).filter((_,i)=>i%3===0).map(seg => `<div class="timeline-item" onclick="seekTo(${seg.startTime})"><div class="timeline-dot"></div><span class="timeline-time">${formatTime(seg.startTime)}</span><span class="timeline-desc">${esc(seg.text.substring(0,60))}...</span></div>`).join('')}
-          </div>
-        </div>
+
+<div class="timeline-header">
+
+<h3>Transcript Statistics</h3>
+
+</div>
+
+<div class="timeline-body">
+
+<p>
+
+Words :
+
+<b>
+
+${m.metrics?.wordCount || 0}
+
+</b>
+
+</p>
+
+<p>
+
+Duration :
+
+<b>
+
+${formatTime(m.duration)}
+
+</b>
+
+</p>
+
+</div>
+
+</div>
         <!-- AI Chat -->
         <div class="chat-panel">
           <div class="chat-header"><h3>AI Chat</h3><span class="chat-badge">Powered by AI</span></div>
-          <div class="chat-messages" id="chat-messages"><div class="chat-message assistant">Hi! Ask me anything about this meeting. Try "Who talked most?" or "List action items".</div></div>
-          <div class="chat-input-area"><input type="text" id="chat-input" placeholder="Ask about this meeting..." onkeypress="if(event.key==='Enter')sendChatMessage('${m._id}')"><button onclick="sendChatMessage('${m._id}')"><i data-lucide="send"></i></button></div>
+          <div class="chat-messages" id="chat-messages"><div class="chat-message assistant">
+
+<b>Ask me about this meeting.</b>
+
+<br><br>
+
+Try one of these:
+
+</div>
+
+<div class="chat-suggestions">
+
+<button onclick="askSuggestion(currentMeetingId,'Summarize this meeting')">
+
+📄 Summary
+
+</button>
+
+<button onclick="askSuggestion(currentMeetingId,'List all action items')">
+
+✅ Action Items
+
+</button>
+
+<button onclick="askSuggestion(currentMeetingId,'What decisions were made?')">
+
+📌 Decisions
+
+</button>
+
+<button onclick="askSuggestion(currentMeetingId,'What are the next steps?')">
+
+➡ Next Steps
+
+</button>
+
+</div></div>
+          <div class="chat-input-area"><input type="text" id="chat-input" placeholder="Try: Summarize this meeting..." onkeypress="if(event.key==='Enter')sendChatMessage('${m._id}')"><button onclick="sendChatMessage('${m._id}')"><i data-lucide="send"></i></button></div>
         </div>
       </div>
       <div class="report-right">
         <div class="report-accordion">
           ${buildAccordion('Executive Summary', 'file-text', '#6C5CE7', m.executiveSummary ? `<p>${esc(m.executiveSummary)}</p>` : '<p>Not available</p>', true)}
-          ${buildAccordion('Meeting Overview', 'clipboard', '#00cec9', m.meetingOverview ? `<p>${esc(m.meetingOverview)}</p>` : '<p>Not available</p>')}
-          ${buildAccordion('Participants', 'users', '#fd79a8', buildParticipantsHTML(m.participants, colors))}
           ${buildAccordion('Key Decisions', 'check-square', '#fdcb6e', buildDecisionsHTML(m.decisions))}
           ${buildAccordion('Action Items', 'list-checks', '#e17055', buildActionItemsHTML(m.actionItems))}
-          ${buildAccordion('Important Quotes', 'quote', '#74b9ff', buildQuotesHTML(m.importantQuotes))}
-          ${buildAccordion('Meeting Metrics', 'bar-chart-3', '#a29bfe', buildMetricsHTML(m.metrics))}
+         
+          
         </div>
       </div>
     </div>`;
   lucide.createIcons();
+  setTimeout(() => {
+
+    document.getElementById("chat-input")?.focus();
+
+}, 300);
   setupMediaPlayer();
 }
 
@@ -157,16 +328,6 @@ function buildAccordion(title, icon, color, content, open = false) {
   </div>`;
 }
 
-function buildParticipantsHTML(participants, colors) {
-  if (!participants?.length) return '<p>No participants identified</p>';
-  return `<div class="participant-list">${participants.map((p,i) => `
-    <div class="participant-item">
-      <div class="participant-avatar" style="background:${colors[i%5]}">${p.name.charAt(0)}</div>
-      <div class="participant-info"><h4>${esc(p.name)}</h4><p>Speaking: ${formatDur(p.speakingTime)} (${p.speakingPercentage}%) · ${p.speechCount} turns</p>
-        <div class="participant-bar"><div class="participant-bar-fill" style="width:${p.speakingPercentage}%;background:${colors[i%5]}"></div></div>
-      </div>
-    </div>`).join('')}</div>`;
-}
 
 function buildActionItemsHTML(items) {
   if (!items?.length) return '<p>No action items identified</p>';
@@ -184,22 +345,8 @@ function buildDecisionsHTML(decisions) {
   return decisions.map(d => `<div class="decision-item"><p>• ${esc(d.text)}</p>${d.madeBy?`<span class="decision-by">by ${esc(d.madeBy)}</span>`:''}</div>`).join('');
 }
 
-function buildQuotesHTML(quotes) {
-  if (!quotes?.length) return '<p>No notable quotes</p>';
-  return quotes.map(q => `<div class="quote-item"><p>"${esc(q.text)}"</p>${q.speaker?`<span class="quote-speaker">— ${esc(q.speaker)}</span>`:''}</div>`).join('');
-}
 
-function buildMetricsHTML(metrics) {
-  if (!metrics) return '<p>No metrics available</p>';
-  return `<div class="metrics-grid">
-    <div class="metric-item"><div class="metric-val">${metrics.totalSpeakers}</div><div class="metric-lbl">Speakers</div></div>
-    <div class="metric-item"><div class="metric-val">${metrics.totalWords}</div><div class="metric-lbl">Words</div></div>
-    <div class="metric-item"><div class="metric-val">${metrics.engagementScore}%</div><div class="metric-lbl">Engagement</div></div>
-    <div class="metric-item"><div class="metric-val">${metrics.meetingEfficiency}%</div><div class="metric-lbl">Efficiency</div></div>
-  </div>
-  <div style="margin-top:12px"><strong style="font-size:13px">Sentiment:</strong> <span style="font-size:13px;color:var(--success);text-transform:capitalize">${metrics.averageSentiment}</span></div>
-  ${metrics.topicsDiscussed?.length ? `<div class="topics-list" style="margin-top:12px">${metrics.topicsDiscussed.map(t=>`<span class="topic-tag">${esc(t)}</span>`).join('')}</div>` : ''}`;
-}
+
 
 /* Media Player */
 function setupMediaPlayer() {
@@ -255,6 +402,25 @@ function filterTranscript(query) {
   });
 }
 
+async function typeMessage(element, text, speed = 15) {
+
+    element.innerHTML = "";
+
+    for (let i = 0; i < text.length; i++) {
+
+        element.innerHTML += text.charAt(i);
+
+        element.parentElement.scrollTop =
+            element.parentElement.scrollHeight;
+
+        await new Promise(resolve =>
+            setTimeout(resolve, speed)
+        );
+
+    }
+
+}
+
 /* Chat */
 async function sendChatMessage(meetingId) {
   const input = document.getElementById('chat-input');
@@ -268,11 +434,56 @@ async function sendChatMessage(meetingId) {
   try {
     // const res = await api.sendChat(meetingId, msg);
     const res = await api.askAI(meetingId, msg);
-    chatBox.innerHTML += `<div class="chat-message assistant">${esc(res.data.answer)}</div>`;
-  } catch {
-    chatBox.innerHTML += `<div class="chat-message assistant">Sorry, I couldn't process your question. Please try again.</div>`;
-  }
+   console.log(res);
+   await typeMessage(
+
+    aiBubble,
+
+    res.data.answer,
+
+    12
+
+);
+   const aiBubble = document.createElement("div");
+
+aiBubble.className = "chat-message assistant";
+
+chatBox.appendChild(aiBubble);
+
+chatBox.scrollTop = chatBox.scrollHeight;
+
+
+
+  } catch (err) {
+
+    console.error(err);
+
+    const aiBubble = document.createElement("div");
+
+    aiBubble.className = "chat-message assistant";
+
+    chatBox.appendChild(aiBubble);
+
+    await typeMessage(
+
+        aiBubble,
+
+        "Sorry, I couldn't process your question.",
+
+        12
+
+    );
+
+}
   chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+async function askSuggestion(meetingId, question) {
+
+    document.getElementById("chat-input").value = question;
+
+    await sendChatMessage(meetingId);
+
 }
 
 async function loadChatHistory(meetingId) {
@@ -285,4 +496,9 @@ async function loadChatHistory(meetingId) {
       chatBox.scrollTop = chatBox.scrollHeight;
     }
   } catch {}
+
+  let progressTimer = null;
+
+
+
 }

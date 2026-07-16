@@ -40,6 +40,19 @@ A production-ready AI Meeting Analyzer that allows users to upload meeting recor
 
 ### Setup
 
+
+1. Clone the repository.
+2. Install dependencies:
+   npm install
+
+3. Download the Whisper model (`ggml-base.en.bin`) and place it in the project root.
+
+4. Download the Whisper binaries and place them in the `whisper/` directory.
+
+5. Run:
+   npm start
+
+
 ```bash
 # 1. Clone the project
 git clone <repo-url>

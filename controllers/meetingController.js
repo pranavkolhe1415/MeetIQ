@@ -352,19 +352,45 @@ exports.getMeetings = async (req, res, next) => {
 
             user: req.user._id
 
-        })
-
-        .sort({
+        }).sort({
 
             createdAt: -1
 
         });
+
+        const totalMeetings = meetings.length;
+
+        const completedMeetings = meetings.filter(
+            m => m.status === "completed"
+        ).length;
+
+        const processingMeetings = meetings.filter(
+            m => m.status === "processing"
+        ).length;
+
+        const uploadedMeetings = meetings.filter(
+            m => m.status === "uploaded"
+        ).length;
 
         return res.json({
 
             success: true,
 
             data: {
+
+                stats: {
+
+                    totalMeetings,
+
+                    completedMeetings,
+
+                    processingMeetings,
+
+                    uploadedMeetings
+
+                },
+
+                recentMeetings: meetings.slice(0, 5),
 
                 meetings
 
@@ -412,7 +438,7 @@ exports.getMeeting = async (req, res, next) => {
 
         }
 
-        return res.json({
+        res.json({
 
             success: true,
 
