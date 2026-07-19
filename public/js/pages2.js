@@ -5,14 +5,14 @@
 /* Processing Screen */
 function renderProcessing(meetingId) {
   const steps = [
-    {id:'upload',label:'Uploading File',icon:'📤'},
-    {id:'extracting_audio',label:'Extracting Audio',icon:'🎵'},
-    {id:'transcribing',label:'Generating Transcript',icon:'📝'},
-    {id:'diarizing',label:'Identifying Speakers',icon:'👥'},
-    {id:'analyzing',label:'Analyzing Meeting',icon:'🧠'},
-    {id:'summarizing',label:'Generating Summary',icon:'📋'},
-    {id:'generating_report',label:'Creating Report',icon:'📄'},
-    {id:'completed',label:'Completed',icon:'✅'},
+    { id: 'upload', label: 'Uploading File', icon: '📤' },
+    { id: 'extracting_audio', label: 'Extracting Audio', icon: '🎵' },
+    { id: 'transcribing', label: 'Generating Transcript', icon: '📝' },
+    { id: 'diarizing', label: 'Identifying Speakers', icon: '👥' },
+    { id: 'analyzing', label: 'Analyzing Meeting', icon: '🧠' },
+    { id: 'summarizing', label: 'Generating Summary', icon: '📋' },
+    { id: 'generating_report', label: 'Creating Report', icon: '📄' },
+    { id: 'completed', label: 'Completed', icon: '✅' },
   ];
   const container = document.getElementById('page-content');
   container.innerHTML = `
@@ -30,134 +30,134 @@ function renderProcessing(meetingId) {
 
 async function pollProgress(meetingId, steps) {
 
-    const stepIds = steps.map(s => s.id);
+  const stepIds = steps.map(s => s.id);
 
-    while (true) {
+  while (true) {
 
-        try {
+    try {
 
-            const res = await api.getMeeting(meetingId);
+      const res = await api.getMeeting(meetingId);
 
-            const meeting = res.data.meeting;
+      const meeting = res.data.meeting;
 
-            const progress = meeting.processingProgress || 0;
+      const progress = meeting.processingProgress || 0;
 
-            const status = meeting.status;
+      const status = meeting.status;
 
-            const currentStep = meeting.processingStep || "Preparing...";
-             const stepMap = {
+      const currentStep = meeting.processingStep || "Preparing...";
+      const stepMap = {
 
-    "Waiting for processing": "upload",
+        "Waiting for processing": "upload",
 
-    "Starting AI Pipeline...": "upload",
+        "Starting AI Pipeline...": "upload",
 
-    "Extracting Audio": "extracting_audio",
+        "Extracting Audio": "extracting_audio",
 
-    "Generating Transcript": "transcribing",
+        "Generating Transcript": "transcribing",
 
-    "Identifying Speakers": "diarizing",
+        "Identifying Speakers": "diarizing",
 
-    "Analyzing Meeting": "analyzing",
+        "Analyzing Meeting": "analyzing",
 
-    "Generating Summary": "summarizing",
+        "Generating Summary": "summarizing",
 
-    "Generating PDF...": "generating_report",
+        "Generating PDF...": "generating_report",
 
-    "Completed": "completed"
+        "Completed": "completed"
 
-};
+      };
 
-const activeStep = stepMap[currentStep];
+      const activeStep = stepMap[currentStep];
 
-const currentIndex = stepIds.indexOf(activeStep);
-            // Update Progress Bar
-            document.getElementById("proc-bar").style.width = progress + "%";
-            document.getElementById("proc-pct").innerText = progress + "%";
-            document.getElementById("proc-step").innerText = currentStep;
+      const currentIndex = stepIds.indexOf(activeStep);
+      // Update Progress Bar
+      document.getElementById("proc-bar").style.width = progress + "%";
+      document.getElementById("proc-pct").innerText = progress + "%";
+      document.getElementById("proc-step").innerText = currentStep;
 
-            // Reset all steps
-            stepIds.forEach(id => {
+      // Reset all steps
+      stepIds.forEach(id => {
 
-                const row = document.getElementById("step-" + id);
+        const row = document.getElementById("step-" + id);
 
-                if (!row) return;
+        if (!row) return;
 
-                row.classList.remove("active", "completed");
+        row.classList.remove("active", "completed");
 
-                row.querySelector(".step-status").innerText = "Waiting";
+        row.querySelector(".step-status").innerText = "Waiting";
 
-            });
+      });
 
-          
 
-            if (currentIndex >= 0) {
 
-                for (let i = 0; i < currentIndex; i++) {
+      if (currentIndex >= 0) {
 
-                    const row = document.getElementById("step-" + stepIds[i]);
+        for (let i = 0; i < currentIndex; i++) {
 
-                    row.classList.add("completed");
+          const row = document.getElementById("step-" + stepIds[i]);
 
-                    row.querySelector(".step-status").innerText = "Done";
+          row.classList.add("completed");
 
-                }
-
-                const active = document.getElementById("step-" + stepIds[currentIndex]);
-
-                active.classList.add("active");
-
-                active.querySelector(".step-status").innerText = "Running";
-
-            }
-
-            // Completed
-            if (status === "completed") {
-
-                stepIds.forEach(id => {
-
-                    const row = document.getElementById("step-" + id);
-
-                    row.classList.add("completed");
-
-                    row.querySelector(".step-status").innerText = "Done";
-
-                });
-
-                document.getElementById("proc-bar").style.width = "100%";
-                document.getElementById("proc-pct").innerText = "100%";
-                document.getElementById("proc-step").innerText = "Meeting Analysis Complete";
-
-                showToast("Analysis Completed!", "success");
-
-                setTimeout(() => {
-
-                    navigateTo("report", meetingId);
-
-                }, 1500);
-
-                break;
-
-            }
-
-            if (status === "failed") {
-
-                showToast("Meeting Processing Failed", "error");
-
-                break;
-
-            }
-
-        } catch (err) {
-
-            console.error(err);
-
-            break;
+          row.querySelector(".step-status").innerText = "Done";
 
         }
 
-        await new Promise(r => setTimeout(r, 1000));
+        const active = document.getElementById("step-" + stepIds[currentIndex]);
+
+        active.classList.add("active");
+
+        active.querySelector(".step-status").innerText = "Running";
+
+      }
+
+      // Completed
+      if (status === "completed") {
+
+        stepIds.forEach(id => {
+
+          const row = document.getElementById("step-" + id);
+
+          row.classList.add("completed");
+
+          row.querySelector(".step-status").innerText = "Done";
+
+        });
+
+        document.getElementById("proc-bar").style.width = "100%";
+        document.getElementById("proc-pct").innerText = "100%";
+        document.getElementById("proc-step").innerText = "Meeting Analysis Complete";
+
+        showToast("Analysis Completed!", "success");
+
+        setTimeout(() => {
+
+          navigateTo("report", meetingId);
+
+        }, 1500);
+
+        break;
+
+      }
+
+      if (status === "failed") {
+
+        showToast("Meeting Processing Failed", "error");
+
+        break;
+
+      }
+
+    } catch (err) {
+
+      console.error(err);
+
+      break;
 
     }
+
+    await new Promise(r => setTimeout(r, 1000));
+
+  }
 
 }
 
@@ -167,7 +167,7 @@ async function renderReport(meetingId) {
   container.innerHTML = '<div class="empty-state"><p>Loading report...</p></div>';
   try {
     // const res = await api.getReport(meetingId);
-   const res = await api.getMeeting(meetingId);
+    const res = await api.getMeeting(meetingId);
     const m = res.data.meeting;
     buildReportPage(m);
     // Load chat history
@@ -180,7 +180,7 @@ async function renderReport(meetingId) {
 function buildReportPage(m) {
   const container = document.getElementById('page-content');
   const isVideo = m.fileType === 'video';
-  const colors = ['#6C5CE7','#00cec9','#fd79a8','#fdcb6e','#74b9ff'];
+  const colors = ['#6C5CE7', '#00cec9', '#fd79a8', '#fdcb6e', '#74b9ff'];
 
   container.innerHTML = `
     <div class="report-header">
@@ -196,7 +196,7 @@ function buildReportPage(m) {
         <div class="media-player">
           <div class="player-container" id="player-container">
             ${isVideo ? `<video id="media-player" src="/uploads/${m.fileName}" preload="metadata"></video>` :
-              `<div class="audio-visual"><i data-lucide="music"></i><p>${esc(m.title)}</p><audio id="media-player" src="/uploads/${m.fileName}" preload="metadata"></audio></div>`}
+      `<div class="audio-visual"><i data-lucide="music"></i><p>${esc(m.title)}</p><audio id="media-player" src="/uploads/${m.fileName}" preload="metadata"></audio></div>`}
           </div>
           <div class="player-controls">
             <button onclick="togglePlay()"><i data-lucide="play" id="play-icon"></i></button>
@@ -206,56 +206,36 @@ function buildReportPage(m) {
           </div>
         </div>
         <!-- Transcript -->
-        <div class="transcript-panel">
-          <div class="transcript-header"><h3>Transcript</h3><div class="transcript-search"><input type="text" placeholder="Search transcript..." onkeyup="filterTranscript(this.value)"></div></div>
-        <div id="transcript-body">
+<div class="transcript-panel">
 
-<pre class="full-transcript">
+    <div class="transcript-header">
 
-${esc(m.fullTranscript || "Transcript not available.")}
+        <div>
 
-</pre>
+            <h3>📝 Meeting Transcript</h3>
 
-</div>
+            <p class="transcript-subtitle">
+
+                ${m.metrics?.wordCount || 0} Words • ${formatTime(m.duration)}
+
+            </p>
+
         </div>
-        <!-- Timeline -->
-        <div class="timeline-panel">
 
-<div class="timeline-header">
+    </div>
 
-<h3>Transcript Statistics</h3>
+    <div id="transcript-body">
 
-</div>
+        ${renderTranscript(m.fullTranscript,
 
-<div class="timeline-body">
+    m.duration)}
 
-<p>
-
-Words :
-
-<b>
-
-${m.metrics?.wordCount || 0}
-
-</b>
-
-</p>
-
-<p>
-
-Duration :
-
-<b>
-
-${formatTime(m.duration)}
-
-</b>
-
-</p>
+    </div>
 
 </div>
+       <!-- Meeting Outline -->
 
-</div>
+${buildMeetingOutline(m)}
         <!-- AI Chat -->
         <div class="chat-panel">
           <div class="chat-header"><h3>AI Chat</h3><span class="chat-badge">Powered by AI</span></div>
@@ -302,6 +282,7 @@ Try one of these:
       <div class="report-right">
         <div class="report-accordion">
           ${buildAccordion('Executive Summary', 'file-text', '#6C5CE7', m.executiveSummary ? `<p>${esc(m.executiveSummary)}</p>` : '<p>Not available</p>', true)}
+          ${buildKeyHighlights(m)}
           ${buildAccordion('Key Decisions', 'check-square', '#fdcb6e', buildDecisionsHTML(m.decisions))}
           ${buildAccordion('Action Items', 'list-checks', '#e17055', buildActionItemsHTML(m.actionItems))}
          
@@ -314,12 +295,12 @@ Try one of these:
 
     document.getElementById("chat-input")?.focus();
 
-}, 300);
+  }, 300);
   setupMediaPlayer();
 }
 
 function buildAccordion(title, icon, color, content, open = false) {
-  return `<div class="accordion-item ${open?'open':''}">
+  return `<div class="accordion-item ${open ? 'open' : ''}">
     <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
       <div style="display:flex;align-items:center"><div class="accordion-icon" style="background:${color}22;color:${color}"><i data-lucide="${icon}"></i></div>${title}</div>
       <i data-lucide="chevron-down"></i>
@@ -342,7 +323,7 @@ function buildActionItemsHTML(items) {
 
 function buildDecisionsHTML(decisions) {
   if (!decisions?.length) return '<p>No decisions identified</p>';
-  return decisions.map(d => `<div class="decision-item"><p>• ${esc(d.text)}</p>${d.madeBy?`<span class="decision-by">by ${esc(d.madeBy)}</span>`:''}</div>`).join('');
+  return decisions.map(d => `<div class="decision-item"><p>• ${esc(d.text)}</p>${d.madeBy ? `<span class="decision-by">by ${esc(d.madeBy)}</span>` : ''}</div>`).join('');
 }
 
 
@@ -355,9 +336,9 @@ function setupMediaPlayer() {
   player.addEventListener('timeupdate', () => {
     const pct = (player.currentTime / player.duration) * 100;
     document.getElementById('timeline-fill').style.width = pct + '%';
-    document.getElementById('player-time').textContent = `${formatTime(Math.floor(player.currentTime))} / ${formatTime(Math.floor(player.duration||0))}`;
+    document.getElementById('player-time').textContent = `${formatTime(Math.floor(player.currentTime))} / ${formatTime(Math.floor(player.duration || 0))}`;
     // Highlight active transcript
-    document.querySelectorAll('.transcript-segment').forEach(seg => {
+    document.querySelectorAll('.transcript-card').forEach(seg => {
       const st = parseFloat(seg.dataset.start);
       seg.classList.toggle('active', player.currentTime >= st && player.currentTime < st + 15);
     });
@@ -367,8 +348,8 @@ function setupMediaPlayer() {
 function togglePlay() {
   const p = document.getElementById('media-player');
   if (!p) return;
-  if (p.paused) { p.play(); document.getElementById('play-icon').setAttribute('data-lucide','pause'); }
-  else { p.pause(); document.getElementById('play-icon').setAttribute('data-lucide','play'); }
+  if (p.paused) { p.play(); document.getElementById('play-icon').setAttribute('data-lucide', 'pause'); }
+  else { p.pause(); document.getElementById('play-icon').setAttribute('data-lucide', 'play'); }
   lucide.createIcons();
 }
 
@@ -391,12 +372,12 @@ function seekMedia(e) {
 
 function seekTo(seconds) {
   const p = document.getElementById('media-player');
-  if (p) { p.currentTime = seconds; p.play(); document.getElementById('play-icon')?.setAttribute('data-lucide','pause'); lucide.createIcons(); }
+  if (p) { p.currentTime = seconds; p.play(); document.getElementById('play-icon')?.setAttribute('data-lucide', 'pause'); lucide.createIcons(); }
 }
 
 function filterTranscript(query) {
   const q = query.toLowerCase();
-  document.querySelectorAll('.transcript-segment').forEach(seg => {
+  document.querySelectorAll('.transcript-card').forEach(seg => {
     const text = seg.textContent.toLowerCase();
     seg.style.display = text.includes(q) ? '' : 'none';
   });
@@ -404,20 +385,20 @@ function filterTranscript(query) {
 
 async function typeMessage(element, text, speed = 15) {
 
-    element.innerHTML = "";
+  element.innerHTML = "";
 
-    for (let i = 0; i < text.length; i++) {
+  for (let i = 0; i < text.length; i++) {
 
-        element.innerHTML += text.charAt(i);
+    element.innerHTML += text.charAt(i);
 
-        element.parentElement.scrollTop =
-            element.parentElement.scrollHeight;
+    element.parentElement.scrollTop =
+      element.parentElement.scrollHeight;
 
-        await new Promise(resolve =>
-            setTimeout(resolve, speed)
-        );
+    await new Promise(resolve =>
+      setTimeout(resolve, speed)
+    );
 
-    }
+  }
 
 }
 
@@ -434,16 +415,7 @@ async function sendChatMessage(meetingId) {
   try {
     // const res = await api.sendChat(meetingId, msg);
     const res = await api.askAI(meetingId, msg);
-   console.log(res);
-   await typeMessage(
-
-    aiBubble,
-
-    res.data.answer,
-
-    12
-
-);
+    console.log(res);
    const aiBubble = document.createElement("div");
 
 aiBubble.className = "chat-message assistant";
@@ -451,6 +423,18 @@ aiBubble.className = "chat-message assistant";
 chatBox.appendChild(aiBubble);
 
 chatBox.scrollTop = chatBox.scrollHeight;
+
+await typeMessage(
+    aiBubble,
+    res.data.answer,
+    12
+);
+
+    aiBubble.className = "chat-message assistant";
+
+    chatBox.appendChild(aiBubble);
+
+    chatBox.scrollTop = chatBox.scrollHeight;
 
 
 
@@ -466,23 +450,23 @@ chatBox.scrollTop = chatBox.scrollHeight;
 
     await typeMessage(
 
-        aiBubble,
+      aiBubble,
 
-        "Sorry, I couldn't process your question.",
+      "Sorry, I couldn't process your question.",
 
-        12
+      12
 
     );
 
-}
+  }
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
 async function askSuggestion(meetingId, question) {
 
-    document.getElementById("chat-input").value = question;
+  document.getElementById("chat-input").value = question;
 
-    await sendChatMessage(meetingId);
+  await sendChatMessage(meetingId);
 
 }
 
@@ -495,10 +479,320 @@ async function loadChatHistory(meetingId) {
       msgs.forEach(m => { chatBox.innerHTML += `<div class="chat-message ${m.role}">${esc(m.content)}</div>`; });
       chatBox.scrollTop = chatBox.scrollHeight;
     }
-  } catch {}
+  }
+    catch (err) {
+        console.error(err);
+    }
+}  
 
   let progressTimer = null;
 
+function renderTranscript(text, duration = 0) {
 
+    if (!text) {
+
+        return `
+
+            <div class="transcript-empty">
+
+                Transcript not available.
+
+            </div>
+
+        `;
+
+    }
+
+    const paragraphs = text
+    .replace(/\n/g, " ")
+    .match(/.{1,280}(\s|$)/g) || [];
+    const total = paragraphs.length;
+
+    return paragraphs.map((paragraph, index) => `
+
+       <div
+
+class="transcript-card"
+
+onclick="jumpToTranscript(${index},${total},${duration})"
+
+>
+
+            <div class="transcript-time">
+
+                ⏱ ${formatTranscriptTime(index, total, duration)}
+
+            </div>
+
+            <div class="transcript-speaker">
+
+                👤 Speaker 1
+
+            </div>
+
+            <div class="transcript-text">
+
+                ${esc(paragraph)}
+
+            </div>
+
+        </div>
+
+    `).join("");
 
 }
+function formatTranscriptTime(index,total,duration){
+
+    if(!duration || duration<=0){
+
+        duration = total * 20;
+
+    }
+
+    const seconds = Math.floor(
+
+        (index / Math.max(total,1)) * duration
+
+    );
+
+    const mins = String(
+
+        Math.floor(seconds / 60)
+
+    ).padStart(2,"0");
+
+    const secs = String(
+
+        seconds % 60
+
+    ).padStart(2,"0");
+
+    return `${mins}:${secs}`;
+
+}
+
+function buildKeyHighlights(meeting){
+
+    const highlights = [];
+
+    if(meeting.executiveSummary){
+
+        meeting.executiveSummary
+        .split(".")
+        .forEach(item=>{
+
+            item=item.trim();
+
+            if(item.length>30)
+
+                highlights.push(item);
+
+        });
+
+    }
+
+    if(Array.isArray(meeting.decisions)){
+
+        meeting.decisions.forEach(d=>{
+
+            if(d.text)
+
+                highlights.push(d.text);
+
+        });
+
+    }
+
+    if(Array.isArray(meeting.actionItems)){
+
+        meeting.actionItems.forEach(a=>{
+
+            if(a.text)
+
+                highlights.push(a.text);
+
+        });
+
+    }
+
+    if(Array.isArray(meeting.nextSteps)){
+
+        meeting.nextSteps.forEach(step=>{
+
+            if(step)
+
+                highlights.push(step);
+
+        });
+
+    }
+
+    const unique=[...new Set(highlights)].slice(0,8);
+
+    if(unique.length===0){
+
+        return "";
+
+    }
+
+    return `
+
+    <div class="highlights-panel">
+
+        <div class="highlights-header">
+
+            ⭐ Key Highlights
+
+        </div>
+
+        <div class="highlights-grid">
+
+            ${unique.map(item=>`
+
+                <div class="highlight-card">
+
+                    <div class="highlight-icon">
+
+                        📌
+
+                    </div>
+
+                    <div class="highlight-text">
+
+                        ${esc(item)}
+
+                    </div>
+
+                </div>
+
+            `).join("")}
+
+        </div>
+
+    </div>
+
+    `;
+
+}
+
+function buildMeetingOutline(meeting){
+
+    const outline = [];
+
+    if(meeting.executiveSummary){
+
+        meeting.executiveSummary
+
+        .split(".")
+
+        .forEach(sentence=>{
+
+            sentence = sentence.trim();
+
+            if(sentence.length > 25){
+
+                outline.push(sentence);
+
+            }
+
+        });
+
+    }
+
+    if(Array.isArray(meeting.actionItems)){
+
+        meeting.actionItems.forEach(item=>{
+
+            if(item.text){
+
+                outline.push(item.text);
+
+            }
+
+        });
+
+    }
+
+    if(Array.isArray(meeting.decisions)){
+
+        meeting.decisions.forEach(item=>{
+
+            if(item.text){
+
+                outline.push(item.text);
+
+            }
+
+        });
+
+    }
+
+    const unique = [...new Set(outline)].slice(0,8);
+
+    if(unique.length===0){
+
+        return "";
+
+    }
+
+    return `
+
+<div class="outline-panel">
+
+<div class="outline-header">
+
+📑 Meeting Outline
+
+</div>
+
+<div class="outline-list">
+
+${unique.map((item,index)=>`
+
+<div class="outline-item">
+
+<div class="outline-number">
+
+${index+1}
+
+</div>
+
+<div class="outline-text">
+
+${esc(item)}
+
+</div>
+
+</div>
+
+`).join("")}
+
+</div>
+
+</div>
+
+`;
+
+}
+function jumpToTranscript(index,total,duration){
+
+    const media = document.querySelector("video,audio");
+
+    if(!media) return;
+
+    const time =
+
+        Math.floor(
+
+            (index / Math.max(total,1))
+
+            * duration
+
+        );
+
+    media.currentTime = time;
+
+    media.play();
+
+}
+
