@@ -2,6 +2,7 @@
  * MeetIQ Pages - Processing, Report, History
  */
 
+let currentMeetingId = null;
 /* Processing Screen */
 function renderProcessing(meetingId) {
   const steps = [
@@ -171,13 +172,14 @@ async function renderReport(meetingId) {
     const m = res.data.meeting;
     buildReportPage(m);
     // Load chat history
-    loadChatHistory(meetingId);
+    // loadChatHistory(meetingId);
   } catch (e) {
     container.innerHTML = `<div class="empty-state"><h4>Report Not Ready</h4><p>${e.message}</p><button class="btn btn-primary" onclick="navigateTo('dashboard')">Go to Dashboard</button></div>`;
   }
 }
 
 function buildReportPage(m) {
+  currentMeetingId = m._id;
   const container = document.getElementById('page-content');
   const isVideo = m.fileType === 'video';
   const colors = ['#6C5CE7', '#00cec9', '#fd79a8', '#fdcb6e', '#74b9ff'];
@@ -424,9 +426,18 @@ chatBox.appendChild(aiBubble);
 
 chatBox.scrollTop = chatBox.scrollHeight;
 
+console.log("Full Response:", res);
+console.log("res.data:", res.data);
+
+const answer =
+    res.answer ||
+    res.data?.answer ||
+    res.data?.data?.answer ||
+    "No response received.";
+
 await typeMessage(
     aiBubble,
-    res.data.answer,
+    answer,
     12
 );
 
@@ -470,20 +481,25 @@ async function askSuggestion(meetingId, question) {
 
 }
 
-async function loadChatHistory(meetingId) {
-  try {
-    const res = await api.getChatHistory(meetingId);
-    const msgs = res.data.messages || [];
-    if (msgs.length) {
-      const chatBox = document.getElementById('chat-messages');
-      msgs.forEach(m => { chatBox.innerHTML += `<div class="chat-message ${m.role}">${esc(m.content)}</div>`; });
-      chatBox.scrollTop = chatBox.scrollHeight;
-    }
-  }
-    catch (err) {
-        console.error(err);
-    }
-}  
+// async function loadChatHistory(meetingId) {
+//   try {
+//     const res = await api.getChatHistory(meetingId);
+//     const msgs = res.data.messages || [];
+//     if (msgs.length) {
+//       const chatBox = document.getElementById('chat-messages');
+//       msgs.forEach(m => { chatBox.innerHTML += `<div class="chat-message ${m.role}">${esc(m.content)}</div>`; });
+//       chatBox.scrollTop = chatBox.scrollHeight;
+//     }
+//   }
+//     catch (err) {
+//         console.error(err);
+//     }
+// }  
+async function loadChatHistory() {
+    return;
+}
+
+
 
   let progressTimer = null;
 
