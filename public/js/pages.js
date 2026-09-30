@@ -218,6 +218,66 @@ function showFilePreview(file) {
   document.getElementById('upload-actions').classList.remove('hidden');
 }
 
+async function startUploadAndAnalyze() {
+    if (!selectedFile) {
+        showToast("Please select a file first", "error");
+        return;
+    }
+
+    const btn = document.getElementById("analyze-btn");
+    const progress = document.getElementById("upload-progress");
+    const progressFill = document.getElementById("progress-fill");
+    const progressLabel = document.getElementById("progress-label");
+    const progressPct = document.getElementById("progress-pct");
+
+    btn.disabled = true;
+
+    if (progress) {
+        progress.classList.remove("hidden");
+    }
+
+    try {
+        const title =
+            document.getElementById("meeting-title")?.value?.trim() ||
+            selectedFile.name;
+
+        const res = await api.uploadFile(
+            selectedFile,
+            title,
+            (pct) => {
+                if (progressFill) {
+                    progressFill.style.width = `${pct}%`;
+                }
+
+                if (progressPct) {
+                    progressPct.textContent = `${pct}%`;
+                }
+
+                if (progressLabel) {
+                    progressLabel.textContent =
+                        pct >= 100 ? "Upload complete" : "Uploading...";
+                }
+            }
+        );
+
+        showToast("Upload complete! Starting analysis...", "success");
+
+        const meetingId = res.data.meeting._id;
+
+        await startAnalysis(meetingId);
+
+    } catch (e) {
+        console.error("Upload/Analysis error:", e);
+
+        showToast(
+            e.message || "Failed to upload and analyze meeting",
+            "error"
+        );
+
+        btn.disabled = false;
+    }
+}
+
 async function startAnalysis(meetingId) {
 
     try {
