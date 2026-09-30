@@ -171,17 +171,23 @@ exports.processMeeting = async (req, res, next) => {
 
         }
 
-        if (meeting.status === "processing") {
+       if (
+    meeting.status === "processing" ||
+    meeting.status === "extracting_audio" ||
+    meeting.status === "transcribing" ||
+    meeting.status === "analyzing" ||
+    meeting.status === "generating_report"
+) {
 
-            return res.status(400).json({
+    return res.status(400).json({
 
-                success: false,
+        success: false,
 
-                message: "Meeting is already being processed."
+        message: "Meeting is already being processed."
 
-            });
+    });
 
-        }
+}
 
         meeting.status = "processing";
         meeting.processingProgress = 0;
@@ -191,7 +197,7 @@ exports.processMeeting = async (req, res, next) => {
 
         console.time("===== TOTAL AI PIPELINE =====");
 
-        console.time("AI Analysis");
+console.time("AI Analysis");
 
         const result = await aiService.analyzeMeeting(
 

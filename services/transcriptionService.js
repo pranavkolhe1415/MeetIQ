@@ -16,120 +16,244 @@ class TranscriptionService {
     constructor() {
 
         this.whisper = path.join(
-
             __dirname,
-
             "..",
-
             "whisper",
-
             "whisper-cli.exe"
-
         );
 
         this.model = path.join(
-
             __dirname,
-
             "..",
-
             "whisper",
-
             "models",
-
             "ggml-base.en.bin"
-
         );
 
     }
-        /**
+
+    /**
      * ------------------------------------------------------
      * Execute Whisper
      * ------------------------------------------------------
      */
 
-   async runWhisper(audioFile) {
+    async runWhisper(audioFile) {
 
-    const outputBase = audioFile;
+        console.log("=================================");
+        console.log("Starting Whisper transcription");
+        console.log("Audio file:", audioFile);
+        console.log("=================================");
 
-    const command = `"${this.whisper}" \
--m "${this.model}" \
--otxt \
--of "${outputBase}" \
-"${audioFile}"`;
+        // Check audio file exists
+        if (!fs.existsSync(audioFile)) {
 
-    console.log(command);
+            throw new Error(
+                `Audio file not found: ${audioFile}`
+            );
 
-    await execAsync(command);
+        }
 
-    return outputBase + ".txt";
+        // Check audio file is not empty
+        const audioStats = fs.statSync(audioFile);
 
-}
-        /**
+        if (audioStats.size === 0) {
+
+            throw new Error(
+                `Audio file is empty: ${audioFile}`
+            );
+
+        }
+
+        console.log(
+            "Audio file size:",
+            audioStats.size,
+            "bytes"
+        );
+
+        // --------------------------------------------------
+        // Remove .wav from output filename
+        //
+        // Input:
+        // 1790749321428.wav
+        //
+        // Output base:
+        // 1790749321428
+        //
+        // Whisper creates:
+        // 1790749321428.txt
+        // --------------------------------------------------
+
+        const outputBase = path.join(
+            path.dirname(audioFile),
+            path.basename(
+                audioFile,
+                path.extname(audioFile)
+            )
+        );
+
+        const command =
+            `"${this.whisper}" ` +
+            `-m "${this.model}" ` +
+            `-otxt ` +
+            `-of "${outputBase}" ` +
+            `"${audioFile}"`;
+
+        console.log("Whisper command:");
+        console.log(command);
+
+        try {
+
+            const {
+                stdout,
+                stderr
+            } = await execAsync(command);
+
+            if (stdout) {
+
+                console.log(
+                    "Whisper stdout:"
+                );
+
+                console.log(stdout);
+
+            }
+
+            if (stderr) {
+
+                console.log(
+                    "Whisper stderr:"
+                );
+
+                console.log(stderr);
+
+            }
+
+        } catch (error) {
+
+            console.error(
+                "Whisper execution failed"
+            );
+
+            console.error(
+                error.message
+            );
+
+            if (error.stdout) {
+
+                console.error(
+                    "Whisper stdout:"
+                );
+
+                console.error(
+                    error.stdout
+                );
+
+            }
+
+            if (error.stderr) {
+
+                console.error(
+                    "Whisper stderr:"
+                );
+
+                console.error(
+                    error.stderr
+                );
+
+            }
+
+            throw new Error(
+                `Whisper execution failed: ${error.message}`
+            );
+
+        }
+
+        // Whisper output file
+        const txtFile =
+            outputBase + ".txt";
+
+        console.log(
+            "Expected transcript:",
+            txtFile
+        );
+
+        // Verify transcript exists
+        if (!fs.existsSync(txtFile)) {
+
+            throw new Error(
+                `Whisper completed but transcript was not generated: ${txtFile}`
+            );
+
+        }
+
+        console.log(
+            "Transcript successfully generated."
+        );
+
+        return txtFile;
+
+    }
+
+
+    /**
      * ------------------------------------------------------
      * Read Transcript
      * ------------------------------------------------------
      */
 
-    readTranscript(txtFile){
+    readTranscript(txtFile) {
 
-        if(!fs.existsSync(txtFile))
+        if (!fs.existsSync(txtFile)) {
 
             throw new Error(
-
-                "Transcript not generated."
-
+                `Transcript not generated: ${txtFile}`
             );
 
+        }
+
         return fs
-
             .readFileSync(
-
                 txtFile,
-
                 "utf8"
-
             )
-
             .trim();
 
     }
-        /**
+
+
+    /**
      * ------------------------------------------------------
      * Clean Transcript
      * ------------------------------------------------------
      */
 
-    clean(text){
+    clean(text) {
 
         return text
-
-        .replace(/\r/g," ")
-
-        .replace(/\n+/g,"\n")
-
-        .replace(/[ ]+/g," ")
-
-        .trim();
+            .replace(/\r/g, " ")
+            .replace(/\n+/g, "\n")
+            .replace(/[ ]+/g, " ")
+            .trim();
 
     }
-        /**
+
+
+    /**
      * ------------------------------------------------------
      * Count Words
      * ------------------------------------------------------
      */
 
-    countWords(transcript){
+    countWords(transcript) {
 
         return transcript
-
             .split(/\s+/)
-
             .filter(Boolean)
-
             .length;
 
     }
+
 
     /**
      * ------------------------------------------------------
@@ -137,17 +261,15 @@ class TranscriptionService {
      * ------------------------------------------------------
      */
 
-    estimateReadingMinutes(words){
+    estimateReadingMinutes(words) {
 
         return Math.max(
-
             1,
-
             Math.ceil(words / 180)
-
         );
 
     }
+
 
     /**
      * ------------------------------------------------------
@@ -155,43 +277,36 @@ class TranscriptionService {
      * ------------------------------------------------------
      */
 
-    detectLanguage(text){
+    detectLanguage(text) {
 
-        if(/[ऀ-ॿ]/.test(text))
-
+        if (/[ऀ-ॿ]/.test(text))
             return "Hindi";
 
-        if(/[ঀ-৿]/.test(text))
-
+        if (/[ঀ-৿]/.test(text))
             return "Bengali";
 
-        if(/[઀-૿]/.test(text))
-
+        if (/[઀-૿]/.test(text))
             return "Gujarati";
 
-        if(/[ఀ-౿]/.test(text))
-
+        if (/[ఀ-౿]/.test(text))
             return "Telugu";
 
-        if(/[ಀ-೿]/.test(text))
-
+        if (/[ಀ-೿]/.test(text))
             return "Kannada";
 
-        if(/[ഀ-ൿ]/.test(text))
-
+        if (/[ഀ-ൿ]/.test(text))
             return "Malayalam";
 
-        if(/[଀-୿]/.test(text))
-
+        if (/[଀-୿]/.test(text))
             return "Odia";
 
-        if(/[அ-௿]/.test(text))
-
+        if (/[அ-௿]/.test(text))
             return "Tamil";
 
         return "English";
 
     }
+
 
     /**
      * ------------------------------------------------------
@@ -199,39 +314,42 @@ class TranscriptionService {
      * ------------------------------------------------------
      */
 
-    cleanup(audioFile){
+    cleanup(audioFile) {
 
-        const extensions=[
-
+        const extensions = [
             ".txt",
-
             ".json",
-
             ".srt",
-
             ".vtt",
-
             ".csv"
-
         ];
 
-        for(const ext of extensions){
+        for (const ext of extensions) {
 
-            const file=audioFile+ext;
+            const file =
+                audioFile + ext;
 
-            try{
+            try {
 
-                if(fs.existsSync(file))
+                if (fs.existsSync(file)) {
 
                     fs.unlinkSync(file);
 
-            }
+                }
 
-            catch{}
+            } catch (error) {
+
+                console.warn(
+                    `Could not delete ${file}:`,
+                    error.message
+                );
+
+            }
 
         }
 
     }
+
 
     /**
      * ------------------------------------------------------
@@ -239,44 +357,94 @@ class TranscriptionService {
      * ------------------------------------------------------
      */
 
-    /**
- * ------------------------------------------------------
- * Complete Transcription
- * ------------------------------------------------------
- */
+    async transcribe(audioFile) {
 
-async transcribe(audioFile) {
+        console.log(
+            "\n========== TRANSCRIPTION =========="
+        );
 
-    const txtFile = await this.runWhisper(audioFile);
+        console.log(
+            "Received audio file:"
+        );
 
-    let transcript = this.readTranscript(txtFile);
+        console.log(audioFile);
 
-    transcript = this.clean(transcript);
+        // Check audio file before Whisper
+        if (!fs.existsSync(audioFile)) {
 
-    if (!transcript || transcript.length < 10) {
+            throw new Error(
+                `Audio file does not exist: ${audioFile}`
+            );
 
-        throw new Error("Unable to generate transcript.");
+        }
+
+        const txtFile =
+            await this.runWhisper(audioFile);
+
+        console.log(
+            "Reading transcript:",
+            txtFile
+        );
+
+        let transcript =
+            this.readTranscript(txtFile);
+
+        transcript =
+            this.clean(transcript);
+
+        if (
+            !transcript ||
+            transcript.length < 10
+        ) {
+
+            throw new Error(
+                `Transcript is empty or too short: ${txtFile}`
+            );
+
+        }
+
+        const words =
+            this.countWords(transcript);
+
+        const readingMinutes =
+            this.estimateReadingMinutes(
+                words
+            );
+
+        const language =
+            this.detectLanguage(
+                transcript
+            );
+
+        console.log(
+            "Transcript words:",
+            words
+        );
+
+        console.log(
+            "Detected language:",
+            language
+        );
+
+        console.log(
+            "==================================\n"
+        );
+
+        return {
+
+            transcript,
+
+            words,
+
+            readingMinutes,
+
+            language
+
+        };
 
     }
 
-    const words = this.countWords(transcript);
-
-    const readingMinutes = this.estimateReadingMinutes(words);
-
-    const language = this.detectLanguage(transcript);
-
-    return {
-
-        transcript,
-
-        words,
-
-        readingMinutes,
-
-        language
-
-    };
-
 }
-}
-module.exports = new TranscriptionService();
+
+module.exports =
+    new TranscriptionService();
