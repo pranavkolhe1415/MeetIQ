@@ -214,10 +214,9 @@ function showFilePreview(file) {
         <div class="progress-text"><span id="progress-label">Uploading...</span><span id="progress-pct">0%</span></div>
       </div>
     </div>`;
-  document.getElementById('title-input-area').classList.remove('hidden');
+    document.getElementById('title-input-area').classList.remove('hidden');
   document.getElementById('upload-actions').classList.remove('hidden');
-
- 
+}
 
 async function startAnalysis(meetingId) {
 
