@@ -230,6 +230,8 @@ console.time("AI Analysis");
         );
 
         console.timeEnd("AI Analysis");
+        
+        meeting.keyHighlights = result.keyHighlights || [];
 
         meeting.fullTranscript =
             result.fullTranscript || "";

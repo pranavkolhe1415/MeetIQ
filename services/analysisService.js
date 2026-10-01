@@ -24,41 +24,26 @@ class AnalysisService {
 Return ONLY valid JSON.
 
 {
-
-"executiveSummary":"",
-
-"actionItems":[
-
-{
-
-"text":"",
-
-"assignee":"",
-
-"priority":"Medium"
-
-}
-
-],
-
-"decisions":[
-
-{
-
-"text":"",
-
-"madeBy":""
-
-}
-
-],
-
-"nextSteps":[
-
-""
-
-]
-
+  "executiveSummary": "",
+  "keyHighlights": [
+    ""
+  ],
+  "actionItems": [
+    {
+      "text": "",
+      "assignee": "",
+      "priority": "Medium"
+    }
+  ],
+  "decisions": [
+    {
+      "text": "",
+      "madeBy": ""
+    }
+  ],
+  "nextSteps": [
+    ""
+  ]
 }
 
 `;
@@ -197,17 +182,13 @@ ${transcript}
 
     emptyResult() {
 
-    return {
-
-        executiveSummary: "",
-
-        actionItems: [],
-
-        decisions: [],
-
-        nextSteps: []
-
-    };
+   return {
+    executiveSummary: "",
+    keyHighlights: [],
+    actionItems: [],
+    decisions: [],
+    nextSteps: []
+};
 
 }
         /**

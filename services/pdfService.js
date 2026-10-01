@@ -933,20 +933,20 @@ async function generatePDF(meeting){
                Transcript
             ========================================================== */
 
-            if (
-    meeting.fullTranscript &&
-    meeting.fullTranscript.trim().length
-) {
+            if (meeting.keyHighlights && meeting.keyHighlights.length > 0) {
+    section(doc, "⭐ Key Highlights");
 
-    section(
-        doc,
-        "Meeting Transcript"
-    );
+    meeting.keyHighlights.forEach((highlight) => {
+        doc
+            .fontSize(10)
+            .fillColor("#222222")
+            .text(`• ${highlight}`, {
+                width: 495,
+                lineGap: 4
+            });
 
-    paragraph(
-        doc,
-        meeting.fullTranscript
-    );
+        doc.moveDown(0.5);
+    });
 }
 
             /* ==========================================================

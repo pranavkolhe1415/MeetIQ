@@ -322,13 +322,30 @@ const meetingSchema = new mongoose.Schema({
        AI Summaries
     ====================================================== */
 
-    executiveSummary:{
+   executiveSummary: {
+    type: String,
+    default: ""
+},
 
-        type:String,
+keyHighlights: {
+    type: [String],
+    default: []
+},
 
-        default:""
+actionItems: {
+    type: Array,
+    default: []
+},
 
-    },
+decisions: {
+    type: Array,
+    default: []
+},
+
+nextSteps: {
+    type: Array,
+    default: []
+},
 
     meetingOverview:{
 
