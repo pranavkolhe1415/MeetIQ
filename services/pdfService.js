@@ -168,27 +168,18 @@ function drawHeader(doc,meeting){
 
     doc.moveDown(.5);
 
-    doc
+doc
+    .font("Helvetica")
+    .fontSize(10)
+    .fillColor("#666")
+    .text(
+        "Meeting Date : " +
+        new Date(
+            meeting.meetingDate || meeting.createdAt
+        ).toLocaleString()
+    );
 
-        .font("Helvetica")
-
-        .fontSize(10)
-
-        .fillColor("#666")
-
-        .text(
-
-            "Meeting Date : " +
-
-            new Date(
-
-                meeting.meetingDate ||
-
-                meeting.createdAt
-
-            ).toLocaleString()
-
-        );
+doc.moveDown();
 
     doc.text(
 
@@ -364,7 +355,7 @@ async function generatePDF(meeting){
 
                     },
 
-                    bufferPages:true
+                    bufferPages:false
 
                 });
 
@@ -858,122 +849,111 @@ async function generatePDF(meeting){
 
             }
 
-            /* ==========================================================
-               Meeting Metrics
-            ========================================================== */
+            // /* ==========================================================
+            //    Meeting Metrics
+            // ========================================================== */
 
-            section(
+            // section(
 
-                doc,
+            //     doc,
 
-                "Meeting Metrics"
+            //     "Meeting Metrics"
 
-            );
+            // );
 
-            const metrics = meeting.metrics || {};
+            // const metrics = meeting.metrics || {};
 
-            doc
+            // doc
 
-                .font("Helvetica")
+            //     .font("Helvetica")
 
-                .fontSize(11)
+            //     .fontSize(11)
 
-                .fillColor("#222");
+            //     .fillColor("#222");
 
-            doc.text(
+            // doc.text(
 
-                "Total Words : " +
+            //     "Total Words : " +
 
-                (metrics.totalWords || 0)
+            //     (metrics.totalWords || 0)
 
-            );
+            // );
 
-            doc.text(
+            // doc.text(
 
-                "Reading Time : " +
+            //     "Reading Time : " +
 
-                (meeting.readingMinutes || 1) +
+            //     (meeting.readingMinutes || 1) +
 
-                " minute(s)"
+            //     " minute(s)"
 
-            );
+            // );
 
-            doc.text(
+            // doc.text(
 
-                "Engagement Score : " +
+            //     "Engagement Score : " +
 
-                (metrics.engagementScore || 0) +
+            //     (metrics.engagementScore || 0) +
 
-                "%"
+            //     "%"
 
-            );
+            // );
 
-            doc.text(
+            // doc.text(
 
-                "Meeting Efficiency : " +
+            //     "Meeting Efficiency : " +
 
-                (metrics.meetingEfficiency || 0) +
+            //     (metrics.meetingEfficiency || 0) +
 
-                "%"
+            //     "%"
 
-            );
+            // );
 
-            doc.text(
+            // doc.text(
 
-                "Processing Time : " +
+            //     "Processing Time : " +
 
-                (meeting.processingTime || 0) +
+            //     (meeting.processingTime || 0) +
 
-                " sec"
+            //     " sec"
 
-            );
+            // );
 
-            doc.text(
+            // doc.text(
 
-                "AI Model : " +
+            //     "AI Model : " +
 
-                safe(meeting.aiModel)
+            //     safe(meeting.aiModel)
 
-            );
+            // );
 
-            doc.moveDown(2);
+            // doc.moveDown(2);
+
                         /* ==========================================================
                Transcript
             ========================================================== */
 
             if (
+    meeting.fullTranscript &&
+    meeting.fullTranscript.trim().length
+) {
 
-                meeting.fullTranscript &&
+    section(
+        doc,
+        "Meeting Transcript"
+    );
 
-                meeting.fullTranscript.trim().length
-
-            ) {
-
-                doc.addPage();
-
-                section(
-
-                    doc,
-
-                    "Meeting Transcript"
-
-                );
-
-                paragraph(
-
-                    doc,
-
-                    meeting.fullTranscript
-
-                );
-
-            }
+    paragraph(
+        doc,
+        meeting.fullTranscript
+    );
+}
 
             /* ==========================================================
                End PDF
             ========================================================== */
 
-            drawFooter(doc);
+            // drawFooter(doc);
 
             doc.end();
 

@@ -11,7 +11,6 @@ const mongoose = require("mongoose");
 ========================================================== */
 
 const transcriptSchema = new mongoose.Schema({
-
     text: {
         type: String,
         required: true
@@ -25,8 +24,12 @@ const transcriptSchema = new mongoose.Schema({
     endTime: {
         type: Number,
         default: 0
-    }
+    },
 
+    speaker: {
+        type: String,
+        default: "Unknown Speaker"
+    }
 }, {
     _id: false
 });

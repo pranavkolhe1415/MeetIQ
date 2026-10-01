@@ -187,7 +187,7 @@ function handleFileSelect(input) {
 function handleFile(file) {
   const allowed = ['video/mp4','video/quicktime','video/x-msvideo','audio/wav','audio/mpeg','audio/mp4','audio/x-m4a','video/webm','audio/webm'];
   if (!allowed.includes(file.type)) { showToast('Unsupported file type', 'error'); return; }
-  if (file.size > 500 * 1024 * 1024) { showToast('File too large (max 500MB)', 'error'); return; }
+  if (file.size > 2 * 1024 * 1024 * 1024) { showToast('File too large (max 2GB)', 'error'); return; }
   selectedFile = file;
   showFilePreview(file);
 }

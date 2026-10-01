@@ -156,7 +156,7 @@ async function pollProgress(meetingId, steps) {
 
     }
 
-    await new Promise(r => setTimeout(r, 1000));
+    await new Promise(r => setTimeout(r, 3000));
 
   }
 
@@ -218,7 +218,7 @@ function buildReportPage(m) {
 
             <p class="transcript-subtitle">
 
-                ${m.metrics?.wordCount || 0} Words • ${formatTime(m.duration)}
+                ${m.metrics?.totalWords  || 0} Words • ${formatTime(m.duration)}
 
             </p>
 
