@@ -181,37 +181,37 @@ doc
 
 doc.moveDown();
 
-    doc.text(
+    // doc.text(
 
-        "Duration : " +
+    //     "Duration : " +
 
-        Math.round(
+    //     Math.round(
 
-            (meeting.duration||0)/60
+    //         (meeting.duration||0)/60
 
-        )+
+    //     )+
 
-        " minutes"
+    //     " minutes"
 
-    );
+    // );
 
-    doc.text(
+    // doc.text(
 
-        "Language : "+
+    //     "Language : "+
 
-        safe(meeting.language)
+    //     safe(meeting.language)
 
-    );
+    // );
 
-    doc.text(
+    // doc.text(
 
-        "AI Model : "+
+    //     "AI Model : "+
 
-        safe(meeting.aiModel)
+    //     safe(meeting.aiModel)
 
-    );
+    // );
 
-    doc.moveDown();
+    // doc.moveDown();
 
 }
 
@@ -380,26 +380,44 @@ async function generatePDF(meeting){
                Executive Summary
             ========================================================== */
 
-            if(meeting.executiveSummary){
+          if(meeting.executiveSummary){
 
-                section(
+    section(
+        doc,
+        "Executive Summary"
+    );
 
-                    doc,
+    paragraph(
+        doc,
+        meeting.executiveSummary
+    );
 
-                    "Executive Summary"
+}
 
-                );
 
-                paragraph(
+// ==========================================================
+// Key Highlights
+// ==========================================================
 
-                    doc,
+if (meeting.keyHighlights && meeting.keyHighlights.length > 0) {
 
-                    meeting.executiveSummary
+    section(doc, "★ Key Highlights");
 
-                );
+    meeting.keyHighlights.forEach((highlight) => {
 
-            }
+        doc
+            .fontSize(10)
+            .fillColor("#222222")
+            .text(`• ${highlight}`, {
+                width: 495,
+                lineGap: 4
+            });
 
+        doc.moveDown(0.5);
+
+    });
+
+}
             /* ==========================================================
                Meeting Overview
             ========================================================== */
@@ -929,26 +947,9 @@ async function generatePDF(meeting){
 
             // doc.moveDown(2);
 
-                        /* ==========================================================
-               Transcript
-            ========================================================== */
+    
 
-            if (meeting.keyHighlights && meeting.keyHighlights.length > 0) {
-    section(doc, "⭐ Key Highlights");
-
-    meeting.keyHighlights.forEach((highlight) => {
-        doc
-            .fontSize(10)
-            .fillColor("#222222")
-            .text(`• ${highlight}`, {
-                width: 495,
-                lineGap: 4
-            });
-
-        doc.moveDown(0.5);
-    });
-}
-
+ 
             /* ==========================================================
                End PDF
             ========================================================== */

@@ -56,7 +56,7 @@ Return ONLY valid JSON.
      * ------------------------------------------------------
      */
 
-  buildPrompt(transcript) {
+ buildPrompt(transcript) {
 
     return `
 
@@ -66,12 +66,34 @@ Read the meeting transcript carefully.
 
 Return ONLY valid JSON.
 
-Generate ONLY these four sections:
+Generate these five sections:
 
 1. Executive Summary
-2. Action Items
-3. Decisions
-4. Next Steps
+2. Key Highlights
+3. Action Items
+4. Decisions
+5. Next Steps
+
+Key Highlights requirements:
+- Generate 4 to 6 highlights.
+- Each highlight must be one concise sentence.
+- Include only important topics, findings, discussions, or outcomes.
+- Do not copy the transcript word-for-word.
+- Do not invent information.
+- If there are no meaningful highlights, return an empty array.
+
+Action Items requirements:
+- Include only actions explicitly discussed in the meeting.
+- Identify the assignee only when the transcript provides enough information.
+- Otherwise use "Unassigned".
+- Priority must be High, Medium, or Low.
+
+Decision requirements:
+- Include only decisions actually made during the meeting.
+- Do not treat general discussion as a decision.
+
+Next Steps requirements:
+- Include only concrete follow-up steps discussed in the meeting.
 
 Do not explain anything.
 
@@ -197,51 +219,46 @@ ${transcript}
      * ------------------------------------------------------
      */
 
-    async analyze(transcript) {
+   async analyze(transcript) {
 
-        try {
+    try {
 
-            if (!transcript || transcript.trim().length < 20) {
+        const prompt = this.buildPrompt(transcript);
 
-                throw new Error(
-                    "Transcript is empty or too short."
-                );
+        const aiResult = await this.askAI(prompt);
 
-            }
+        console.log(
+            "========== AI RESULT =========="
+        );
 
-            const prompt =
-                this.buildPrompt(transcript);
+        console.log(
+            JSON.stringify(aiResult, null, 2)
+        );
 
-            const aiResult =
-                await this.askAI(prompt);
+        console.log(
+            "================================"
+        );
 
-            return this.validate(aiResult);
+        return this.validate(aiResult);
 
-        }
+    } catch (error) {
 
-        catch (err) {
+        console.error(
+            "Analysis Error:",
+            error.message
+        );
 
-            console.error(
-                "Analysis Error:",
-                err.message
-            );
-
-            return this.emptyResult();
-
-        }
+        return this.emptyResult();
 
     }
+
+}
         /**
      * ------------------------------------------------------
      * Validate Result
      * ------------------------------------------------------
      */
 
-    /**
- * ------------------------------------------------------
- * Validate Result
- * ------------------------------------------------------
- */
 
 validate(data) {
 
@@ -250,6 +267,23 @@ validate(data) {
         executiveSummary:
 
             data.executiveSummary || "",
+
+        keyHighlights:
+
+            Array.isArray(data.keyHighlights)
+
+                ? data.keyHighlights
+
+                    .filter(highlight =>
+                        typeof highlight === "string" &&
+                        highlight.trim() !== ""
+                    )
+
+                    .map(highlight =>
+                        highlight.trim()
+                    )
+
+                : [],
 
         actionItems:
 

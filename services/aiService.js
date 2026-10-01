@@ -346,6 +346,9 @@ const analysis = await analysisService.analyze(
     decisions:
         analysis.decisions,
 
+        keyHighlights:
+    analysis.keyHighlights || [],
+    
     nextSteps:
         analysis.nextSteps,
 

@@ -51,11 +51,17 @@ class ReportService {
             actionItems:
                 analysis.actionItems || [],
 
-            decisions:
-                analysis.decisions || [],
+           decisions:
+    analysis.decisions || [],
 
-            importantQuotes:
-                analysis.importantQuotes || [],
+keyHighlights:
+    analysis.keyHighlights || [],
+
+nextSteps:
+    analysis.nextSteps || [],
+
+importantQuotes:
+    analysis.importantQuotes || [],
 
             metrics,
 
